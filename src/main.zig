@@ -1,6 +1,8 @@
 const w4 = @import("wasm4.zig");
 const Controller = @import("Controller.zig");
 
+const ram = @import("ram").allocator;
+
 const creampallet = [4]u32{
     0xf9a875,
     0xfff6d3,
@@ -25,15 +27,13 @@ const smiley = [8]u8{
     0b11100111,
 };
 
-var controller1 = Controller{};
+var controls = Controller{};
 var xpos: i16 = 0;
 
 const std = @import("std");
 
 var rng = std.rand.DefaultPrng.init(0);
 const r = rng.random();
-
-const memory: *[58975]u8 = @intToPtr(*[58975]u8, 0x19A0);
 
 export fn start() void {
     for (w4.PALETTE.*) |*pallet, n| {
@@ -44,29 +44,41 @@ export fn start() void {
     //const ram = memory.allocator();
 }
 
-pub export const afunnystring: [*]const u8 = "Come find me! i'm not used anywhere";
+fn title_bar(health: i16) void {
+    const hblock = @divTrunc(health, 4);
+    for (w4.FRAMEBUFFER[0..280]) |*byte, n| {
+        if (hblock >= n % 40) {
+            byte.* = r.int(u8);
+            byte.* |= 0b10101010;
+
+            if (hblock == n % 40) {
+                const m4: i16 = @mod(health, 4);
+                byte.* &= switch (m4) {
+                    0 => 0b00000000,
+                    1 => 0b00000011,
+                    2 => 0b00011111,
+                    3 => 0b01111111,
+                    else => @as(u8, 0xff),
+                };
+            }
+        } else {
+            byte.* = 0b00000000;
+        }
+    }
+
+    w4.DRAW_COLORS.* = 0x4102;
+    w4.text("However", 55, 0);
+}
 
 export fn update() void {
-    for (w4.FRAMEBUFFER[0..280]) |*byte| {
-        byte.* = r.int(u8);
-        byte.* |= 0b10101010;
+    title_bar(158);
+
+    controls.update(w4.GAMEPAD1.*);
+
+    if (controls.is_held(w4.BUTTON_1)) {
+        xpos += 1;
     }
 
-    w4.DRAW_COLORS.* = 0x02;
-    w4.text("However", 55, 0);
-
-    controller1.update(w4.GAMEPAD1.*);
-
-    if (controller1.is_pressed(w4.BUTTON_1)) {
-        w4.DRAW_COLORS.* = 0x34;
-    } else if (controller1.is_held(w4.BUTTON_1)) {
-        w4.DRAW_COLORS.* = 0x03;
-    } else if (controller1.is_released(w4.BUTTON_1)) {
-        w4.DRAW_COLORS.* = 0x43;
-        w4.trace("nice release bud!");
-    }
-
-    xpos += 1;
     if (xpos > w4.CANVAS_SIZE) {
         xpos = -8;
     }
