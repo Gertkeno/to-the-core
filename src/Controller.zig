@@ -1,4 +1,4 @@
-const gamepad = packed struct {
+const Gamepad = packed struct {
     x: bool = false,
     y: bool = false,
     _: u2 = 0,
@@ -12,14 +12,14 @@ const Self = @This();
 
 previous: u8 = 0,
 
-pressed: gamepad = .{},
-held: gamepad = .{},
-released: gamepad = .{},
+pressed: Gamepad = .{},
+held: Gamepad = .{},
+released: Gamepad = .{},
 
 pub fn update(self: *Self, newgamepad: u8) void {
     self.previous = @bitCast(u8, self.held);
-    self.held = @bitCast(gamepad, newgamepad);
+    self.held = @bitCast(Gamepad, newgamepad);
 
-    self.pressed = @bitCast(gamepad, newgamepad & newgamepad ^ self.previous);
-    self.released = @bitCast(gamepad, self.previous & newgamepad ^ self.previous);
+    self.pressed = @bitCast(Gamepad, newgamepad & newgamepad ^ self.previous);
+    self.released = @bitCast(Gamepad, self.previous & newgamepad ^ self.previous);
 }
