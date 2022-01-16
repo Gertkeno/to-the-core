@@ -1,25 +1,7 @@
-// _1
-const _1_width = 4;
-const _1_height = 6;
-const _1_flags = 1; // BLIT_2BPP
+// animtion frames
 const _1 = [6]u8{ 0xb6, 0xf3, 0x82, 0x3c, 0xbe, 0x38 };
-
-// _2
-const _2_width = 4;
-const _2_height = 6;
-const _2_flags = 1; // BLIT_2BPP
 const _2 = [6]u8{ 0xb7, 0xf2, 0x82, 0x3c, 0x3e, 0xac };
-
-// _3
-const _3_width = 4;
-const _3_height = 6;
-const _3_flags = 1; // BLIT_2BPP
 const _3 = [6]u8{ 0xb7, 0xf2, 0x80, 0x3e, 0x8e, 0xa2 };
-
-// _4
-const _4_width = 4;
-const _4_height = 6;
-const _4_flags = 1; // BLIT_2BPP
 const _4 = [6]u8{ 0xb6, 0xf3, 0x02, 0xbc, 0xbc, 0x8a };
 
 const frames: []const [6]u8 = &.{
@@ -33,7 +15,7 @@ const w4 = @import("wasm4.zig");
 
 x: i32,
 y: i32,
-animation: u4 = 0,
+animation: u8 = 0,
 flipme: bool = false,
 
 pub fn draw(self: Self) void {
@@ -59,7 +41,7 @@ pub fn update(self: *Self, controls: Controller) void {
 
     if (@bitCast(u8, controls.held) & 0b11110000 != 0) {
         self.animation += 1;
-        if (self.animation > frames.len << 2) {
+        if (self.animation >= (frames.len << 2)) {
             self.animation = 0;
         }
     }

@@ -5,7 +5,6 @@ const ram = @import("ram.zig").allocator;
 const Controller = @import("Controller.zig");
 const Sound = @import("Sound.zig");
 const Pallet = @import("Pallet.zig");
-const Sprite = @import("Sprite.zig");
 
 const Layer = @import("Layer.zig");
 const Character = @import("Character.zig");
@@ -27,9 +26,7 @@ export fn start() void {
         pallet.* = Pallet.cards[n];
     }
 
-    for (layer.tiles) |*tile| {
-        tile.* = @intToEnum(Layer.Tiles, r.uintLessThan(u4, 2));
-    }
+    layer.init_cave(r);
 
     //w4.SYSTEM_FLAGS.* = w4.SYSTEM_PRESERVE_FRAMEBUFFER;
 
@@ -92,13 +89,8 @@ export fn update() void {
 
     if (controls.released.y) {
         brickBreak.play();
-        for (layer.tiles) |*tile| {
-            tile.* = @intToEnum(Layer.Tiles, r.uintLessThan(u4, 2));
-        }
+        layer.init_cave(r);
     } else if (controls.released.x) {
         layer.init_blank();
     }
-
-    //Sprite.blitstone(@bitCast(Sprite.Faces, @as(u4, 0b1101)), xpos, 76);
-    //w4.blit(&Sprite.stoneBottom, xpos, 76, 8, 8, w4.BLIT_1BPP);
 }
