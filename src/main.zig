@@ -8,11 +8,16 @@ const Pallet = @import("Pallet.zig");
 const Sprite = @import("Sprite.zig");
 
 const Layer = @import("Layer.zig");
+const Character = @import("Character.zig");
 
 var controls = Controller{};
 var xpos: i16 = 0;
 
 var layer = Layer{};
+var player = Character{
+    .x = 320,
+    .y = 320,
+};
 
 var rng = std.rand.DefaultPrng.init(0);
 const r = rng.random();
@@ -23,7 +28,7 @@ export fn start() void {
     }
 
     for (layer.tiles) |*tile| {
-        tile.* = @intToEnum(Layer.Tiles, r.uintLessThan(u4, 3));
+        tile.* = @intToEnum(Layer.Tiles, r.uintLessThan(u4, 2));
     }
 
     //w4.SYSTEM_FLAGS.* = w4.SYSTEM_PRESERVE_FRAMEBUFFER;
@@ -75,7 +80,10 @@ export fn update() void {
     //w4.blit(&cats, 0, 7, 160, 153, w4.BLIT_2BPP);
 
     controls.update(w4.GAMEPAD1.*);
+    layer.draw();
 
+    player.update(controls);
+    player.draw();
     if (controls.held.right) {
         xpos += 1;
     } else if (controls.held.left) {
@@ -87,11 +95,10 @@ export fn update() void {
         for (layer.tiles) |*tile| {
             tile.* = @intToEnum(Layer.Tiles, r.uintLessThan(u4, 2));
         }
+    } else if (controls.released.x) {
+        layer.init_blank();
     }
 
-    w4.DRAW_COLORS.* = 0x43;
-    layer.draw();
     //Sprite.blitstone(@bitCast(Sprite.Faces, @as(u4, 0b1101)), xpos, 76);
     //w4.blit(&Sprite.stoneBottom, xpos, 76, 8, 8, w4.BLIT_1BPP);
-    w4.text("Press X to blink", 16, 90);
 }

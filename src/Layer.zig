@@ -1,5 +1,5 @@
 const Sprite = @import("Sprite.zig");
-const w4 = @import("wasm4");
+const w4 = @import("wasm4.zig");
 
 const Self = @This();
 
@@ -44,14 +44,39 @@ fn get_surrounding_tile(self: Self, index: usize, tile: Tiles) Sprite.Faces {
 }
 
 pub fn draw(self: Self) void {
+    w4.DRAW_COLORS.* = 0x21;
+    var lastdraw: Tiles = .empty;
+
     for (self.tiles) |tile, n| {
+        const x: i32 = @intCast(i32, n % 20 * 8);
+        const y: i32 = @intCast(i32, n / 20 * 8) + 8;
         switch (tile) {
             .stone => {
-                const x: i32 = @intCast(i32, n % 20 * 8);
-                const y: i32 = @intCast(i32, n / 20 * 8) + 8;
+                if (lastdraw != .stone) {
+                    w4.DRAW_COLORS.* = 0x43;
+                    lastdraw = .stone;
+                }
                 Sprite.blitstone(self.get_surrounding_tile(n, .stone), x, y);
+            },
+            .empty => {
+                if (lastdraw != .empty) {
+                    w4.DRAW_COLORS.* = 0x21;
+                    lastdraw = .empty;
+                }
+                Sprite.blitempty(self.get_surrounding_tile(n, .empty), x, y);
             },
             else => {},
         }
+    }
+}
+
+pub fn init_blank(self: *Self) void {
+    for (self.tiles) |*tile| {
+        tile.* = .stone;
+    }
+
+    const startsquare = [4]usize{ 189, 190, 209, 210 };
+    for (startsquare) |index| {
+        self.tiles[index] = .empty;
     }
 }
