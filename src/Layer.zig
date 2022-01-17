@@ -1,13 +1,17 @@
-const Sprite = @import("Caveart.zig");
+const Cave = @import("Caveart.zig");
+const Build = @import("Buildart.zig");
 const std = @import("std");
 const w4 = @import("wasm4.zig");
 
 const Self = @This();
 
 pub const Tiles = enum(u8) {
+    // cave //
     empty,
     stone,
     spring,
+    // built //
+    siphon,
 };
 
 tiles: [380]Tiles = undefined,
@@ -23,8 +27,8 @@ fn is_empty(tile: Tiles) bool {
     return tile == .empty;
 }
 
-fn get_surrounding_tile(self: Self, index: usize, func: fn (Tiles) bool) Sprite.Faces {
-    var faces: Sprite.Faces = undefined;
+fn get_surrounding_tile(self: Self, index: usize, func: fn (Tiles) bool) Cave.Faces {
+    var faces: Cave.Faces = undefined;
     const x = index % 20;
     const y = index / 20;
 
@@ -63,19 +67,23 @@ fn draw_tile(self: Self, index: usize) void {
         .stone => {
             w4.DRAW_COLORS.* = 0x43;
             const stones = self.get_surrounding_tile(index, is_stone);
-            Sprite.blitstone(stones, x, y);
+            Cave.blitstone(stones, x, y);
         },
         .empty => {
             w4.DRAW_COLORS.* = 0x21;
-            Sprite.blitempty(self.get_surrounding_tile(index, is_empty), x, y);
+            Cave.blitempty(self.get_surrounding_tile(index, is_empty), x, y);
         },
         .spring => {
             w4.DRAW_COLORS.* = 0x43;
             const stones = self.get_surrounding_tile(index, is_stone);
-            Sprite.blitstone(stones, x, y);
+            Cave.blitstone(stones, x, y);
 
             w4.DRAW_COLORS.* = 0x10;
-            w4.blit(&Sprite.Spring, x, y, 8, 8, 0);
+            w4.blit(&Cave.Spring, x, y, 8, 8, 0);
+        },
+        .siphon => {
+            w4.DRAW_COLORS.* = 0x12;
+            w4.blit(&Build.Siphon, x, y, 8, 8, 0);
         },
     }
 }
@@ -182,7 +190,7 @@ pub fn init_cave(self: *Self, layer: i32, rng: std.rand.Random) void {
     }
 }
 
-pub fn check_pos(self: Self, x: i32, y: i32) Tiles {
+pub fn get_tile(self: Self, x: i32, y: i32) Tiles {
     if (x < 0 or y < 0 or x > 20 or y > 19) {
         unreachable;
     }
@@ -194,4 +202,13 @@ pub fn check_pos(self: Self, x: i32, y: i32) Tiles {
 pub fn set_tile(self: *Self, x: i32, y: i32, tile: Tiles) void {
     const index = @intCast(usize, x + y * 20);
     self.tiles[index] = tile;
+}
+
+pub fn walkable(self: Self, x: i32, y: i32) bool {
+    const index = @intCast(usize, x + y * 20);
+    const tile = self.tiles[index];
+    return switch (tile) {
+        .empty, .siphon => true,
+        else => false,
+    };
 }

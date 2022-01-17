@@ -97,34 +97,32 @@ pub fn update(self: *Self, controls: Controller) void {
     }
 
     { // x simple collision detection
-        const y = @intCast(usize, math.clamp((self.y - 20) >> 5, 0, 18));
-        const xl = @intCast(usize, math.clamp(self.x >> 5, 0, 19));
-        const xr = @intCast(usize, math.clamp((self.x + 12) >> 5, 0, 19));
-        if (self.x < 0 or map.tiles[xl + y * 20] != .empty) {
+        const y = math.clamp((self.y - 20) >> 5, 0, 18);
+        const xl = math.clamp(self.x >> 5, 0, 19);
+        const xr = math.clamp((self.x + 12) >> 5, 0, 19);
+        if (self.x < 0 or !map.walkable(xl, y)) {
             self.x += 2;
-        } else if (self.x > (156 << 2) + 2 or map.tiles[xr + y * 20] != .empty) {
+        } else if (self.x > (156 << 2) + 2 or !map.walkable(xr, y)) {
             self.x -= 2;
         }
     }
 
     if (controls.held.up) {
         self.y -= 1;
+        self.heldup = -1;
     } else if (controls.held.down) {
         self.y += 1;
-    }
-
-    if (@bitCast(u8, controls.held) & 0b00110000 == 0) {
-        self.heldup = if (controls.held.up) @as(i2, -1) else 0 + if (controls.held.down) @as(i2, 1) else 0;
+        self.heldup = 1;
     }
 
     { // y simple collision detection
-        const yt = @intCast(usize, math.clamp((self.y - 20) >> 5, 0, 18));
-        const yb = @intCast(usize, math.clamp((self.y - 12) >> 5, 0, 18));
-        const x = @intCast(usize, math.clamp((self.x + 6) >> 5, 0, 19));
+        const yt = math.clamp((self.y - 20) >> 5, 0, 18);
+        const yb = math.clamp((self.y - 12) >> 5, 0, 18);
+        const x = math.clamp((self.x + 6) >> 5, 0, 19);
 
-        if (self.y < 32 or map.tiles[x + yt * 20] != .empty) {
+        if (self.y < 32 or !map.walkable(x, yt)) {
             self.y += 2;
-        } else if (self.y > (154 << 2) + 2 or map.tiles[x + yb * 20] != .empty) {
+        } else if (self.y > (154 << 2) + 2 or !map.walkable(x, yb)) {
             self.y -= 2;
         }
     }
@@ -139,10 +137,12 @@ pub fn update(self: *Self, controls: Controller) void {
     if (controls.released.x) {
         // use tool
         const tool = self.tool_tile_position();
-        const tile = map.check_pos(tool.x, tool.y);
+        const tile = map.get_tile(tool.x, tool.y);
         if (tile == .stone) {
             map.set_tile(tool.x, tool.y, .empty);
             brickBreak.play();
+        } else if (tile == .empty) {
+            map.set_tile(tool.x, tool.y, .siphon);
         }
     } else if (controls.released.y) {
         // select tool
