@@ -4,7 +4,7 @@ const w4 = @import("wasm4.zig");
 
 const Self = @This();
 
-pub const Tiles = enum(u4) {
+pub const Tiles = enum(u8) {
     empty,
     stone,
     spring,
@@ -12,7 +12,18 @@ pub const Tiles = enum(u4) {
 
 tiles: [380]Tiles = undefined,
 
-fn get_surrounding_tile(self: Self, index: usize, tile: Tiles) Sprite.Faces {
+fn is_stone(tile: Tiles) bool {
+    return switch (tile) {
+        .stone, .spring => true,
+        else => false,
+    };
+}
+
+fn is_empty(tile: Tiles) bool {
+    return tile == .empty;
+}
+
+fn get_surrounding_tile(self: Self, index: usize, func: fn (Tiles) bool) Sprite.Faces {
     var faces: Sprite.Faces = undefined;
     const x = index % 20;
     const y = index / 20;
@@ -20,25 +31,25 @@ fn get_surrounding_tile(self: Self, index: usize, tile: Tiles) Sprite.Faces {
     if (y == 0) {
         faces.up = true;
     } else {
-        faces.up = self.tiles[(y - 1) * 20 + x] == tile;
+        faces.up = func(self.tiles[index - 20]);
     }
 
     if (y == 18) {
         faces.down = true;
     } else {
-        faces.down = self.tiles[(y + 1) * 20 + x] == tile;
+        faces.down = func(self.tiles[index + 20]);
     }
 
     if (x == 0) {
         faces.left = true;
     } else {
-        faces.left = self.tiles[y * 20 + x - 1] == tile;
+        faces.left = func(self.tiles[index - 1]);
     }
 
     if (x == 19) {
         faces.right = true;
     } else {
-        faces.right = self.tiles[y * 20 + x + 1] == tile;
+        faces.right = func(self.tiles[index + 1]);
     }
 
     return faces;
@@ -51,13 +62,21 @@ fn draw_tile(self: Self, index: usize) void {
     switch (tile) {
         .stone => {
             w4.DRAW_COLORS.* = 0x43;
-            Sprite.blitstone(self.get_surrounding_tile(index, .stone), x, y);
+            const stones = self.get_surrounding_tile(index, is_stone);
+            Sprite.blitstone(stones, x, y);
         },
         .empty => {
             w4.DRAW_COLORS.* = 0x21;
-            Sprite.blitempty(self.get_surrounding_tile(index, .empty), x, y);
+            Sprite.blitempty(self.get_surrounding_tile(index, is_empty), x, y);
         },
-        .spring => {},
+        .spring => {
+            w4.DRAW_COLORS.* = 0x43;
+            const stones = self.get_surrounding_tile(index, is_stone);
+            Sprite.blitstone(stones, x, y);
+
+            w4.DRAW_COLORS.* = 0x10;
+            w4.blit(&Sprite.Spring, x, y, 8, 8, 0);
+        },
     }
 }
 
@@ -78,6 +97,8 @@ pub fn draw_at(self: Self, x: i32, y: i32) void {
         }
     }
 }
+
+// initializeation //
 
 pub fn init_blank(self: *Self) void {
     for (self.tiles) |*tile| {
@@ -131,7 +152,7 @@ fn simulate_cave(oldmap: []const bool, newmap: []bool) void {
     }
 }
 
-pub fn init_cave(self: *Self, rng: std.rand.Random) void {
+pub fn init_cave(self: *Self, layer: i32, rng: std.rand.Random) void {
     var caveOldBuffer: [380]bool = undefined; // bitsets generate nearly 26k of code !?
     var caveNewBuffer: [380]bool = undefined;
 
@@ -147,6 +168,12 @@ pub fn init_cave(self: *Self, rng: std.rand.Random) void {
 
     for (self.tiles) |*tile, n| {
         tile.* = if (caveOldBuffer[n]) .stone else .empty;
+    }
+
+    var springs = std.math.max(5 - (layer >> 3), 1);
+    while (springs > 0) : (springs -= 1) {
+        const index = rng.uintAtMost(u32, 380);
+        self.tiles[index] = .spring;
     }
 
     const startsquare = [_]usize{ 189, 190, 170, 210 };

@@ -64,6 +64,10 @@ pub fn increment() void {
     }
 }
 
+pub fn get_current() u8 {
+    return currentlayer;
+}
+
 pub fn draw(progress: i16) void {
     if (progress > 0) {
         rng.bytes(w4.FRAMEBUFFER[0..320]);

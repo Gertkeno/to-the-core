@@ -129,6 +129,14 @@ pub const Faces = packed struct {
     right: bool = false,
     up: bool = false,
     down: bool = false,
+
+    pub fn bor(a: Faces, b: Faces) Faces {
+        return @bitCast(Faces, @bitCast(u4, a) | @bitCast(u4, b));
+    }
+
+    pub fn bnot(a: Faces) Faces {
+        return @bitCast(Faces, ~@bitCast(u4, a));
+    }
 };
 
 const w4 = @import("wasm4.zig");
@@ -168,11 +176,11 @@ pub fn blitempty(face: Faces, x: i32, y: i32) void {
 
 pub const Spring = [8]u8{
     0b00000000,
-    0b00010000,
-    0b00101000,
-    0b01010100,
-    0b00101010,
-    0b00010100,
-    0b00001000,
+    0b01110100,
+    0b00101110,
+    0b00000000,
+    0b00000000,
+    0b00000000,
+    0b00000000,
     0b00000000,
 };

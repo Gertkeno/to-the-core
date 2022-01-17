@@ -28,7 +28,7 @@ export fn start() void {
     rng = randombacker.random();
     w4.SYSTEM_FLAGS.* = w4.SYSTEM_PRESERVE_FRAMEBUFFER;
 
-    map.init_cave(rng);
+    map.init_cave(0, rng);
     LayerProgress.init();
 }
 
@@ -42,7 +42,7 @@ export fn update() void {
     player.draw();
 
     if (controls.released.y) {
-        map.init_cave(rng);
+        map.init_cave(LayerProgress.get_current(), rng);
         LayerProgress.increment();
         LayerProgress.draw(0);
     }
