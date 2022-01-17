@@ -1,6 +1,5 @@
 const w4 = @import("wasm4.zig");
 const std = @import("std");
-const ram = @import("ram.zig").allocator;
 
 const Controller = @import("Controller.zig");
 const Sound = @import("Sound.zig");

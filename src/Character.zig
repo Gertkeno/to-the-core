@@ -84,9 +84,11 @@ pub fn update(self: *Self, controls: Controller) void {
     if (controls.held.right) {
         self.x += 1;
         self.flipme = false;
+        self.heldup = 0;
     } else if (controls.held.left) {
         self.x -= 1;
         self.flipme = true;
+        self.heldup = 0;
     }
 
     { // x simple collision detection
@@ -108,8 +110,6 @@ pub fn update(self: *Self, controls: Controller) void {
 
     if (@bitCast(u8, controls.held) & 0b00110000 == 0) {
         self.heldup = if (controls.held.up) @as(i2, -1) else 0 + if (controls.held.down) @as(i2, 1) else 0;
-    } else {
-        self.heldup = 0;
     }
 
     { // y simple collision detection

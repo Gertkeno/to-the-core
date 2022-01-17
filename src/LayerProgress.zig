@@ -20,11 +20,12 @@ fn set_layername(newlayer: u8) void {
     if (nameindex >= names.len) {
         layername = "Winner!?";
     } else {
-        layername = std.fmt.bufPrint(
-            &layernamebuffer,
-            "{s} {d}",
-            .{ names[nameindex], newlayer % 9 + 1 },
-        ) catch |err| @errorName(err);
+        const layertype = names[nameindex];
+        std.mem.copy(u8, &layernamebuffer, layertype);
+        layernamebuffer[layertype.len] = ' ';
+        layernamebuffer[layertype.len + 1] = '0' + (newlayer % 9 + 1);
+
+        layername = layernamebuffer[0 .. layertype.len + 2];
     }
 }
 
