@@ -82,6 +82,11 @@ pub fn init_blank(self: *Self) void {
     }
 }
 
+// cellular cave initialize //
+const deathNeighbors = 2;
+const birthNeighbors = 3;
+const simulationSteps = 2;
+
 fn alive_neighbours(bitset: std.StaticBitSet(380), x: i32, y: i32) u8 {
     var alive: u8 = 0;
     var i: i32 = -1;
@@ -105,10 +110,6 @@ fn alive_neighbours(bitset: std.StaticBitSet(380), x: i32, y: i32) u8 {
 
     return alive;
 }
-
-const deathNeighbors = 2;
-const birthNeighbors = 3;
-const simulationSteps = 2;
 
 fn simulate_cave(oldmap: std.StaticBitSet(380), newmap: *std.StaticBitSet(380)) void {
     var y: i32 = 0;
@@ -147,4 +148,18 @@ pub fn init_cave(self: *Self, rng: std.rand.Random) void {
     for (startsquare) |index| {
         self.tiles[index] = .empty;
     }
+}
+
+pub fn check_pos(self: Self, x: i32, y: i32) Tiles {
+    if (x < 0 or y < 0 or x > 20 or y > 19) {
+        unreachable;
+    }
+
+    const index = @intCast(usize, x + y * 20);
+    return self.tiles[index];
+}
+
+pub fn set_tile(self: *Self, x: i32, y: i32, tile: Tiles) void {
+    const index = @intCast(usize, x + y * 20);
+    self.tiles[index] = tile;
 }
