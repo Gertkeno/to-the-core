@@ -28,3 +28,17 @@ pub const halloween = [4]u32{
     0x602878,
     0x300030,
 };
+
+pub const spacehaze = [4]u32{
+    0xf8e3c4,
+    0xcc3495,
+    0x6b1fb1,
+    0x0b0630,
+};
+
+pub const coldfire = [4]u32{
+    0xf6c6a8,
+    0xd17c7c,
+    0x5b768d,
+    0x46425e,
+};

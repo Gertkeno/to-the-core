@@ -3,7 +3,7 @@ const std = @import("std");
 
 const Controller = @import("Controller.zig");
 const Sound = @import("Sound.zig");
-const Pallet = @import("Pallet.zig");
+const Palette = @import("Palette.zig");
 
 const Layer = @import("Layer.zig");
 const LayerProgress = @import("LayerProgress.zig");
@@ -21,8 +21,8 @@ var rng = std.rand.DefaultPrng.init(0);
 const r = rng.random();
 
 export fn start() void {
-    for (w4.PALETTE.*) |*pallet, n| {
-        pallet.* = Pallet.cards[n];
+    for (w4.PALETTE.*) |*palette, n| {
+        palette.* = Palette.cards[n];
     }
 
     w4.SYSTEM_FLAGS.* = w4.SYSTEM_PRESERVE_FRAMEBUFFER;

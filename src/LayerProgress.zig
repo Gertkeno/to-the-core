@@ -1,21 +1,32 @@
 const w4 = @import("wasm4.zig");
 const std = @import("std");
+const Palette = @import("Palette.zig");
 
 var layernamebuffer: [16]u8 = undefined;
 var layername: []const u8 = layernamebuffer[0..7];
 var currentlayer: u8 = 0;
 
-fn set_layername(newlayer: u8) void {
-    const names: []const []const u8 = &.{
-        "Crust",
-        "Lithosphere",
-        "Asthenosphere",
-        "Mantle",
-        "Mesosphere",
-        "Outer Core",
-        "Inner Core",
-    };
+const names: []const []const u8 = &.{
+    "Crust",
+    "Lithosphere",
+    "Asthenosphere",
+    "Mantle",
+    "Mesosphere",
+    "Outer Core",
+    "Inner Core",
+};
 
+const palette: []const [4]u32 = &.{
+    Palette.mint,
+    Palette.gb,
+    Palette.coldfire,
+    Palette.cards,
+    Palette.deep,
+    Palette.spacehaze,
+    Palette.halloween,
+};
+
+fn set_layername(newlayer: u8) void {
     const nameindex = newlayer / 9;
     if (nameindex >= names.len) {
         layername = "Winner!?";
@@ -26,6 +37,11 @@ fn set_layername(newlayer: u8) void {
         layernamebuffer[layertype.len + 1] = '0' + (newlayer % 9 + 1);
 
         layername = layernamebuffer[0 .. layertype.len + 2];
+
+        const npalette = palette[nameindex];
+        for (w4.PALETTE.*) |*p, n| {
+            p.* = npalette[n];
+        }
     }
 }
 
