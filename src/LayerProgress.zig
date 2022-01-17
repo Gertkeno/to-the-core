@@ -58,11 +58,12 @@ pub fn increment() void {
 
 pub fn draw(progress: i16, r: std.rand.Random) void {
     if (progress > 0) {
+        r.bytes(w4.FRAMEBUFFER[0..320]);
+
         const p2 = @divTrunc(progress, 4);
         for (w4.FRAMEBUFFER[0..320]) |*byte, n| {
             const x = n % 40;
             if (p2 >= x) {
-                byte.* = r.int(u8);
                 byte.* |= 0b10101010;
 
                 if (p2 == x) {

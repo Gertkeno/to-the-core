@@ -42,10 +42,15 @@ animation: u8 = 0,
 flipme: bool = false,
 heldup: i2 = 0,
 
+// I use a lot of bitshifts since x/y are not going to be negative but will be
+// used in signed math, and I only want to divide by 4 (>>2) where player
+// movement is sub-frame. For divisions by 32 (>>5) we convert player's
+// subframe position to the 20x19 tilegrid
+
 fn tool_tile_position(self: Self) struct { x: i32, y: i32 } {
-    var xoffset: i32 = 0;
+    var xoffset: i32 = 8;
     if (self.heldup == 0) {
-        xoffset = if (self.flipme) -28 else 28 + 16;
+        xoffset += if (self.flipme) @as(i32, -32) else 28;
     }
     const toolx: i32 = math.clamp((self.x + xoffset) >> 5, 0, 19);
     const yoffset: i32 = 32 * @intCast(i32, self.heldup);
@@ -73,7 +78,7 @@ pub fn draw(self: Self) void {
     self.draw_tool();
 }
 
-fn player_tile_position(self: Self) usize {
+pub fn player_tile_position(self: Self) usize {
     const x: i32 = math.clamp((self.x + 8) >> 5, 0, 19);
     const y: i32 = math.clamp((self.y - 20) >> 5, 0, 18);
 
@@ -115,7 +120,7 @@ pub fn update(self: *Self, controls: Controller) void {
     { // y simple collision detection
         const yt = @intCast(usize, math.clamp((self.y - 20) >> 5, 0, 18));
         const yb = @intCast(usize, math.clamp((self.y - 12) >> 5, 0, 18));
-        const x = @intCast(usize, math.clamp(self.x >> 5, 0, 19));
+        const x = @intCast(usize, math.clamp((self.x + 6) >> 5, 0, 19));
 
         if (self.y < 32 or map.tiles[x + yt * 20] != .empty) {
             self.y += 1;

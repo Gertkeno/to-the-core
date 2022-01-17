@@ -44,29 +44,37 @@ fn get_surrounding_tile(self: Self, index: usize, tile: Tiles) Sprite.Faces {
     return faces;
 }
 
-pub fn draw(self: Self) void {
-    w4.DRAW_COLORS.* = 0x21;
-    var lastdraw: Tiles = .empty;
+fn draw_tile(self: Self, index: usize) void {
+    const tile = self.tiles[index];
+    const x: i32 = @intCast(i32, index % 20 * 8);
+    const y: i32 = @intCast(i32, index / 20 * 8) + 8;
+    switch (tile) {
+        .stone => {
+            w4.DRAW_COLORS.* = 0x43;
+            Sprite.blitstone(self.get_surrounding_tile(index, .stone), x, y);
+        },
+        .empty => {
+            w4.DRAW_COLORS.* = 0x21;
+            Sprite.blitempty(self.get_surrounding_tile(index, .empty), x, y);
+        },
+        .spring => {},
+    }
+}
 
-    for (self.tiles) |tile, n| {
-        const x: i32 = @intCast(i32, n % 20 * 8);
-        const y: i32 = @intCast(i32, n / 20 * 8) + 8;
-        switch (tile) {
-            .stone => {
-                if (lastdraw != .stone) {
-                    w4.DRAW_COLORS.* = 0x43;
-                    lastdraw = .stone;
-                }
-                Sprite.blitstone(self.get_surrounding_tile(n, .stone), x, y);
-            },
-            .empty => {
-                if (lastdraw != .empty) {
-                    w4.DRAW_COLORS.* = 0x21;
-                    lastdraw = .empty;
-                }
-                Sprite.blitempty(self.get_surrounding_tile(n, .empty), x, y);
-            },
-            else => {},
+pub fn draw_full(self: Self) void {
+    for (self.tiles) |_, n| {
+        self.draw_tile(n);
+    }
+}
+
+pub fn draw_at(self: Self, x: i32, y: i32) void {
+    const index = @intCast(usize, x + y * 20);
+    const surrounding = [_]i32{ -21, -20, -19, -1, 1, 19, 20, 21 };
+
+    for (surrounding) |diff| {
+        if (-diff < index and index + diff < self.tiles.len) {
+            const dindex = @intCast(usize, index + diff);
+            self.draw_tile(dindex);
         }
     }
 }
@@ -89,22 +97,17 @@ const simulationSteps = 2;
 
 fn alive_neighbours(bitset: []const bool, x: i32, y: i32) u8 {
     var alive: u8 = 0;
-    var i: i32 = -1;
-    while (i < 2) : (i += 1) {
-        var j: i32 = -1;
-        while (j < 2) : (j += 1) {
-            var nx = x + i;
-            var ny = y + j;
-            if (i == 0 and j == 0) {
-                continue;
-            } else if (nx < 0 or ny < 0 or nx > 20 or ny > 19) {
+    const surrounding = [_]i8{ -21, -20, -19, -1, 1, 19, 20, 21 };
+
+    const index = x + y * 20;
+    for (surrounding) |diff| {
+        if (index + diff > 0 and index + diff < bitset.len) {
+            const dindex = @intCast(usize, index + diff);
+            if (bitset[dindex]) {
                 alive += 1;
-            } else {
-                const index = @intCast(usize, nx + (ny * 20));
-                if (bitset[index]) {
-                    alive += 1;
-                }
             }
+        } else {
+            alive += 1;
         }
     }
 

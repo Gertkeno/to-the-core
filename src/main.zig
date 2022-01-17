@@ -17,31 +17,32 @@ var player = Character{
     .y = 320,
 };
 
-var rng = std.rand.DefaultPrng.init(0);
-const r = rng.random();
+var randombacker = std.rand.DefaultPrng.init(82715);
+export var rng: std.rand.Random = undefined;
 
 export fn start() void {
     for (w4.PALETTE.*) |*palette, n| {
         palette.* = Palette.cards[n];
     }
 
+    rng = randombacker.random();
     w4.SYSTEM_FLAGS.* = w4.SYSTEM_PRESERVE_FRAMEBUFFER;
 
-    map.init_cave(r);
+    map.init_cave(rng);
     LayerProgress.init();
 }
 
 export fn update() void {
-    LayerProgress.draw(6, r);
+    LayerProgress.draw(0, rng);
 
     controls.update(w4.GAMEPAD1.*);
-    map.draw();
+    map.draw_full();
 
     player.update(controls);
     player.draw();
 
     if (controls.released.y) {
-        map.init_cave(r);
+        map.init_cave(rng);
         LayerProgress.increment();
     }
 }
