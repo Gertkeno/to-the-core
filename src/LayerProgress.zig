@@ -26,10 +26,18 @@ const palette: []const [4]u32 = &.{
     Palette.halloween,
 };
 
+extern const rng: std.rand.Random;
+
 fn set_layername(newlayer: u8) void {
     const nameindex = newlayer / 9;
+    std.mem.set(u8, w4.FRAMEBUFFER[0..320], 0);
     if (nameindex >= names.len) {
         layername = "Winner!?";
+
+        const npalette = palette[newlayer % 7];
+        for (w4.PALETTE.*) |*p, n| {
+            p.* = npalette[n];
+        }
     } else {
         const layertype = names[nameindex];
         std.mem.copy(u8, &layernamebuffer, layertype);
@@ -56,9 +64,9 @@ pub fn increment() void {
     }
 }
 
-pub fn draw(progress: i16, r: std.rand.Random) void {
+pub fn draw(progress: i16) void {
     if (progress > 0) {
-        r.bytes(w4.FRAMEBUFFER[0..320]);
+        rng.bytes(w4.FRAMEBUFFER[0..320]);
 
         const p2 = @divTrunc(progress, 4);
         for (w4.FRAMEBUFFER[0..320]) |*byte, n| {

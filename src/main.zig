@@ -33,7 +33,7 @@ export fn start() void {
 }
 
 export fn update() void {
-    LayerProgress.draw(0, rng);
+    LayerProgress.draw(0);
 
     controls.update(w4.GAMEPAD1.*);
     map.draw_full();
@@ -44,5 +44,6 @@ export fn update() void {
     if (controls.released.y) {
         map.init_cave(rng);
         LayerProgress.increment();
+        LayerProgress.draw(0);
     }
 }

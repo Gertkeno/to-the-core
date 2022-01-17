@@ -165,3 +165,14 @@ pub fn blitempty(face: Faces, x: i32, y: i32) void {
     const buffer = bor_tile(face, empties);
     w4.blit(std.asBytes(&buffer), x, y, 8, 8, w4.BLIT_1BPP);
 }
+
+pub const Spring = [8]u8{
+    0b00000000,
+    0b00010000,
+    0b00101000,
+    0b01010100,
+    0b00101010,
+    0b00010100,
+    0b00001000,
+    0b00000000,
+};

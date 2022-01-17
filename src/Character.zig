@@ -101,9 +101,9 @@ pub fn update(self: *Self, controls: Controller) void {
         const xl = @intCast(usize, math.clamp(self.x >> 5, 0, 19));
         const xr = @intCast(usize, math.clamp((self.x + 12) >> 5, 0, 19));
         if (self.x < 0 or map.tiles[xl + y * 20] != .empty) {
-            self.x += 1;
-        } else if (self.x > 160 << 2 or map.tiles[xr + y * 20] != .empty) {
-            self.x -= 1;
+            self.x += 2;
+        } else if (self.x > (156 << 2) + 2 or map.tiles[xr + y * 20] != .empty) {
+            self.x -= 2;
         }
     }
 
@@ -123,9 +123,9 @@ pub fn update(self: *Self, controls: Controller) void {
         const x = @intCast(usize, math.clamp((self.x + 6) >> 5, 0, 19));
 
         if (self.y < 32 or map.tiles[x + yt * 20] != .empty) {
-            self.y += 1;
-        } else if (self.y > 160 << 2 or map.tiles[x + yb * 20] != .empty) {
-            self.y -= 1;
+            self.y += 2;
+        } else if (self.y > (154 << 2) + 2 or map.tiles[x + yb * 20] != .empty) {
+            self.y -= 2;
         }
     }
 
