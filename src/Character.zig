@@ -112,6 +112,7 @@ const toolfail = Sound{
         .sustain = 6,
         .attack = 10,
     },
+    .volume = 60,
     .mode = w4.TONE_TRIANGLE,
 };
 

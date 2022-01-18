@@ -41,7 +41,7 @@ const brickBreak = Sound{
     .freq = .{ .start = 600, .end = 280 },
     .adsr = .{ .sustain = 10, .release = 10 },
     .mode = w4.TONE_NOISE,
-    .volume = 25,
+    .volume = 45,
 };
 
 const icon_dig = [8]u8{
@@ -49,7 +49,7 @@ const icon_dig = [8]u8{
     0b01111110,
     0b10011011,
     0b00011001,
-    0b00111000,
+    0b00110000,
     0b00110000,
     0b01110000,
     0b01100000,

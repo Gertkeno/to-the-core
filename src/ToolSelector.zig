@@ -1,9 +1,24 @@
 const Character = @import("Character.zig");
 const Controller = @import("Controller.zig");
+const Sound = @import("Sound.zig");
 const Bank = @import("Bank.zig");
 const Tool = @import("Tool.zig");
 
 const w4 = @import("wasm4.zig");
+
+const ticky = Sound{
+    .freq = .{
+        .start = 900,
+        .end = 700,
+    },
+    .adsr = .{
+        .sustain = 4,
+        .release = 4,
+    },
+
+    .volume = 20,
+    .mode = w4.TONE_PULSE2,
+};
 
 extern const bank: Bank;
 
@@ -13,8 +28,10 @@ index: usize = 0,
 pub fn selecting(self: *Self, char: *Character, controls: Controller) bool {
     if (self.index > 0 and controls.released.up) {
         self.index -= 1;
+        ticky.play();
     } else if (self.index < Tool.array.len and controls.released.down) {
         self.index += 1;
+        ticky.play();
     }
 
     if (controls.released.x) {
@@ -25,6 +42,7 @@ pub fn selecting(self: *Self, char: *Character, controls: Controller) bool {
             char.tool = Tool.array[self.index];
             char.resourcePreview = &bank.stockpile.mana;
         }
+        ticky.play();
         return true;
     } else {
         return false;
