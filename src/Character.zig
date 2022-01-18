@@ -78,6 +78,10 @@ fn draw_tool(self: Self) void {
         w4.DRAW_COLORS.* = 0x20;
     }
     w4.blit(&crosshair, tool.x * 8, (tool.y + 1) * 8, 8, 8, flags);
+
+    w4.DRAW_COLORS.* = 0x21;
+    const xflip = if (tool.x < 6 and tool.y > 11) @as(i32, 152) else 0;
+    w4.blit(self.tool.?.icon, xflip, 152, 8, 8, w4.BLIT_1BPP);
 }
 
 pub fn draw(self: Self) void {
@@ -115,6 +119,7 @@ pub fn update(self: *Self, controls: Controller) void {
     if (self.toolSelecting) |*ts| {
         if (ts.selecting(self, controls)) {
             self.toolSelecting = null;
+            self.toolerror = null;
         }
         return;
     }
