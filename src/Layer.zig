@@ -190,13 +190,13 @@ pub fn init_cave(self: *Self, layer: i32, rng: std.rand.Random) void {
     }
 }
 
-pub fn get_tile(self: Self, x: i32, y: i32) Tiles {
+pub fn get_tile(self: *Self, x: i32, y: i32) *Tiles {
     if (x < 0 or y < 0 or x > 20 or y > 19) {
         unreachable;
     }
 
     const index = @intCast(usize, x + y * 20);
-    return self.tiles[index];
+    return &self.tiles[index];
 }
 
 pub fn set_tile(self: *Self, x: i32, y: i32, tile: Tiles) void {

@@ -8,10 +8,12 @@ const Palette = @import("Palette.zig");
 const Layer = @import("Layer.zig");
 const LayerProgress = @import("LayerProgress.zig");
 const Character = @import("Character.zig");
+const Bank = @import("Bank.zig");
 
 var controls = Controller{};
 
 export var map = Layer{};
+export var bank = Bank{};
 var player = Character{
     .x = 320,
     .y = 320,
@@ -41,7 +43,7 @@ export fn update() void {
     player.update(controls);
     player.draw();
 
-    if (controls.released.y) {
+    if (false and controls.released.y) {
         map.init_cave(LayerProgress.get_current(), rng);
         LayerProgress.increment();
         LayerProgress.draw(0);

@@ -1,3 +1,6 @@
+const w4 = @import("wasm4.zig");
+const math = @import("std").math;
+
 // animtion frames
 const _1 = [6]u8{ 0xb6, 0xf3, 0x82, 0x3c, 0xbe, 0x38 };
 const _2 = [6]u8{ 0xb7, 0xf2, 0x82, 0x3c, 0x3e, 0xac };
@@ -22,25 +25,20 @@ const crosshair = [8]u8{
 const Self = @This();
 
 const Controller = @import("Controller.zig");
-const Sound = @import("Sound.zig");
 const Layer = @import("Layer.zig");
-const w4 = @import("wasm4.zig");
-const math = @import("std").math;
-
-const brickBreak = Sound{
-    .freq = .{ .start = 600, .end = 280 },
-    .adsr = .{ .sustain = 10, .release = 10 },
-    .mode = w4.TONE_NOISE,
-    .volume = 25,
-};
+const Tool = @import("Tool.zig");
 
 extern var map: Layer;
 
-x: i32 = 320,
-y: i32 = 320,
+const SubRatio = 2;
+
+x: i32 = 80 << SubRatio,
+y: i32 = 80 << SubRatio,
 animation: u8 = 0,
 flipme: bool = false,
 heldup: i2 = 0,
+
+tool: fn (*Layer.Tiles) bool = Tool.dig,
 
 // I use a lot of bitshifts since x/y are not going to be negative but will be
 // used in signed math, and I only want to divide by 4 (>>2) where player
@@ -73,7 +71,7 @@ fn draw_tool(self: Self) void {
 pub fn draw(self: Self) void {
     w4.DRAW_COLORS.* = 0x4023;
     const flags = w4.BLIT_2BPP | if (self.flipme) w4.BLIT_FLIP_X else 0;
-    w4.blit(&frames[self.animation >> 2], self.x >> 2, self.y >> 2, 4, 6, flags);
+    w4.blit(&frames[self.animation >> 2], self.x >> SubRatio, self.y >> SubRatio, 4, 6, flags);
 
     self.draw_tool();
 }
@@ -138,11 +136,8 @@ pub fn update(self: *Self, controls: Controller) void {
         // use tool
         const tool = self.tool_tile_position();
         const tile = map.get_tile(tool.x, tool.y);
-        if (tile == .stone) {
-            map.set_tile(tool.x, tool.y, .empty);
-            brickBreak.play();
-        } else if (tile == .empty) {
-            map.set_tile(tool.x, tool.y, .siphon);
+        if (self.tool(tile)) {
+            //
         }
     } else if (controls.released.y) {
         // select tool
