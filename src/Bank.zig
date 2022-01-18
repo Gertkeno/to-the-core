@@ -1,9 +1,9 @@
 const Self = @This();
 const std = @import("std");
 
-const Ratio = 20;
+pub const Ratio = 20;
 
-pub const Currency = packed struct {
+pub const Currency = struct {
     mana: u32 = 0,
     amber: u32 = 0,
     drill: u32 = 0,

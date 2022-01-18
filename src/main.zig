@@ -32,6 +32,7 @@ export fn start() void {
 
     map.init_cave(0, rng);
     LayerProgress.init();
+    player.resourcePreview = &bank.stockpile.mana;
 }
 
 export fn update() void {

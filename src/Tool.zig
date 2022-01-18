@@ -4,6 +4,7 @@ const Sound = @import("Sound.zig");
 const w4 = @import("wasm4.zig");
 
 extern var bank: Bank;
+extern var map: Layer;
 
 const icon_sell = [8]u8{
     0b00111100,
@@ -16,18 +17,23 @@ const icon_sell = [8]u8{
     0b00111100,
 };
 
-pub fn sell(tile: *Layer.Tiles) bool {
-    switch (tile.*) {
-        .siphon => {
-            tile.* = .empty;
-            return true;
-        },
-        .stone,
-        .empty,
-        .spring,
-        => {
-            return false;
-        },
+const resaleValue = [_]u32{
+    0, 0, 0, 1,
+};
+
+pub fn sell(index: usize) bool {
+    const tile = &map.tiles[index];
+    const resale = resaleValue[@enumToInt(tile.*)];
+    if (resale != 0) {
+        tile.* = .empty;
+        if (resale & 0x80000000 == 0) {
+            bank.stockpile.mana += resale << Bank.Ratio;
+        } else {
+            bank.stockpile.amber += (resale & 0x80000000) << Bank.Ratio;
+        }
+        return true;
+    } else {
+        return false;
     }
 }
 
@@ -49,7 +55,8 @@ const icon_dig = [8]u8{
     0b01100000,
 };
 
-pub fn dig(tile: *Layer.Tiles) bool {
+pub fn dig(index: usize) bool {
+    const tile = &map.tiles[index];
     switch (tile.*) {
         .stone => {
             tile.* = .empty;
@@ -63,13 +70,13 @@ pub fn dig(tile: *Layer.Tiles) bool {
     }
 }
 
-const Entry = struct {
+pub const Belt = struct {
     icon: *const [8]u8,
-    func: fn (*Layer.Tiles) bool,
+    func: fn (usize) bool,
     name: []const u8,
 };
 
-pub const array = [_]Entry{
+pub const array = [_]Belt{
     .{
         .icon = &icon_dig,
         .func = dig,

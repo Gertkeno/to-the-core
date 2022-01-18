@@ -22,23 +22,31 @@ const crosshair = [8]u8{
     0b00001110,
 };
 
-const Self = @This();
-
 const Controller = @import("Controller.zig");
+const Sound = @import("Sound.zig");
+const Bank = @import("Bank.zig");
 const Layer = @import("Layer.zig");
-const Tool = @import("Tool.zig");
+const ToolSelector = @import("ToolSelector.zig");
+const Belt = @import("Tool.zig").Belt;
 
 extern var map: Layer;
+extern var bank: Bank;
 
 const SubRatio = 2;
+const TileRatio = SubRatio + 3;
+
+const Self = @This();
 
 x: i32 = 80 << SubRatio,
 y: i32 = 80 << SubRatio,
 animation: u8 = 0,
+toolerror: ?u8 = null,
 flipme: bool = false,
 heldup: i2 = 0,
 
-tool: fn (*Layer.Tiles) bool = Tool.dig,
+toolSelecting: ?ToolSelector = null,
+tool: ?Belt = null,
+resourcePreview: ?*const u32 = null,
 
 // I use a lot of bitshifts since x/y are not going to be negative but will be
 // used in signed math, and I only want to divide by 4 (>>2) where player
@@ -50,9 +58,9 @@ fn tool_tile_position(self: Self) struct { x: i32, y: i32 } {
     if (self.heldup == 0) {
         xoffset += if (self.flipme) @as(i32, -32) else 28;
     }
-    const toolx: i32 = math.clamp((self.x + xoffset) >> 5, 0, 19);
+    const toolx: i32 = math.clamp((self.x + xoffset) >> TileRatio, 0, 19);
     const yoffset: i32 = 32 * @intCast(i32, self.heldup);
-    const tooly: i32 = math.clamp((self.y + 12 - 32 + yoffset) >> 5, 0, 18);
+    const tooly: i32 = math.clamp((self.y + 12 - 32 + yoffset) >> TileRatio, 0, 18);
 
     return .{
         .x = toolx,
@@ -64,7 +72,11 @@ fn draw_tool(self: Self) void {
     const tool = self.tool_tile_position();
 
     const flags = w4.BLIT_1BPP | if (self.animation & 8 != 0) w4.BLIT_FLIP_Y else 0;
-    w4.DRAW_COLORS.* = 0x20;
+    if (self.toolerror != null and self.toolerror.? & 4 != 0) {
+        w4.DRAW_COLORS.* = 0x14;
+    } else {
+        w4.DRAW_COLORS.* = 0x20;
+    }
     w4.blit(&crosshair, tool.x * 8, (tool.y + 1) * 8, 8, 8, flags);
 }
 
@@ -73,17 +85,47 @@ pub fn draw(self: Self) void {
     const flags = w4.BLIT_2BPP | if (self.flipme) w4.BLIT_FLIP_X else 0;
     w4.blit(&frames[self.animation >> 2], self.x >> SubRatio, self.y >> SubRatio, 4, 6, flags);
 
-    self.draw_tool();
+    if (self.toolSelecting) |ts| {
+        ts.draw();
+    } else if (self.tool != null) {
+        self.draw_tool();
+    }
 }
 
 pub fn player_tile_position(self: Self) usize {
-    const x: i32 = math.clamp((self.x + 8) >> 5, 0, 19);
-    const y: i32 = math.clamp((self.y - 20) >> 5, 0, 18);
+    const x: i32 = math.clamp((self.x + 8) >> TileRatio, 0, 19);
+    const y: i32 = math.clamp((self.y - 20) >> TileRatio, 0, 18);
 
     return @intCast(usize, x + y * 20);
 }
 
+const toolfail = Sound{
+    .freq = .{
+        .start = 200,
+        .end = 1600,
+    },
+    .adsr = .{
+        .sustain = 6,
+        .attack = 10,
+    },
+    .mode = w4.TONE_TRIANGLE,
+};
+
 pub fn update(self: *Self, controls: Controller) void {
+    if (self.toolSelecting) |*ts| {
+        if (ts.selecting(self, controls)) {
+            self.toolSelecting = null;
+        }
+        return;
+    }
+
+    if (self.toolerror) |*tr| {
+        tr.* += 1;
+        if (tr.* == 45) {
+            self.toolerror = null;
+        }
+    }
+
     if (controls.held.right) {
         self.x += 1;
         self.flipme = false;
@@ -95,9 +137,9 @@ pub fn update(self: *Self, controls: Controller) void {
     }
 
     { // x simple collision detection
-        const y = math.clamp((self.y - 20) >> 5, 0, 18);
-        const xl = math.clamp(self.x >> 5, 0, 19);
-        const xr = math.clamp((self.x + 12) >> 5, 0, 19);
+        const y = math.clamp((self.y - 20) >> TileRatio, 0, 18);
+        const xl = math.clamp(self.x >> TileRatio, 0, 19);
+        const xr = math.clamp((self.x + 12) >> TileRatio, 0, 19);
         if (self.x < 0 or !map.walkable(xl, y)) {
             self.x += 2;
         } else if (self.x > (156 << 2) + 2 or !map.walkable(xr, y)) {
@@ -114,9 +156,9 @@ pub fn update(self: *Self, controls: Controller) void {
     }
 
     { // y simple collision detection
-        const yt = math.clamp((self.y - 20) >> 5, 0, 18);
-        const yb = math.clamp((self.y - 12) >> 5, 0, 18);
-        const x = math.clamp((self.x + 6) >> 5, 0, 19);
+        const yt = math.clamp((self.y - 20) >> TileRatio, 0, 18);
+        const yb = math.clamp((self.y - 12) >> TileRatio, 0, 18);
+        const x = math.clamp((self.x + 6) >> TileRatio, 0, 19);
 
         if (self.y < 32 or !map.walkable(x, yt)) {
             self.y += 2;
@@ -132,14 +174,17 @@ pub fn update(self: *Self, controls: Controller) void {
         }
     }
 
-    if (controls.released.x) {
+    if (controls.released.x and self.tool != null) {
         // use tool
         const tool = self.tool_tile_position();
-        const tile = map.get_tile(tool.x, tool.y);
-        if (self.tool(tile)) {
-            //
+        const tindex = @intCast(usize, tool.x + tool.y * 20);
+        if (!self.tool.?.func(tindex)) {
+            if (self.toolerror == null) {
+                self.toolerror = 0;
+                toolfail.play();
+            }
         }
     } else if (controls.released.y) {
-        // select tool
+        self.toolSelecting = ToolSelector{};
     }
 }
