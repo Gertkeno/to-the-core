@@ -15,8 +15,11 @@ fn direct_neighbors(index: usize, tile: Layer.Tiles) u2 {
             continue;
 
         const neighbor = map.tiles[index + @intCast(usize, diff)];
-        if (neighbor == tile)
+        if (tile == .stone and (neighbor == .spring or neighbor == .deposit)) {
             count += 1;
+        } else if (neighbor == tile) {
+            count += 1;
+        }
     }
     return count;
 }
@@ -80,13 +83,15 @@ pub fn dig(index: usize) bool {
         return false;
 
     const tile = &map.tiles[index];
-    if (tile.* != .stone)
+    if (tile.* != .stone and tile.* != .deposit)
         return false;
 
-    tile.* = .empty;
     bank.stockpile.mana -= Bank.at_ratio(1);
-    bank.stockpile.amber += Bank.at_ratio(1);
+    if (tile.* == .deposit)
+        bank.stockpile.amber += Bank.at_ratio(1);
+
     brickBreak.play();
+    tile.* = .empty;
     return true;
 }
 
@@ -103,7 +108,7 @@ const sfxHousingLow = Sound{
 
 const sfxHousingHigh = Sound{
     .freq = .{
-        .start = 900,
+        .start = 500,
     },
     .adsr = .{
         .sustain = 8,

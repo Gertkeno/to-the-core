@@ -19,7 +19,8 @@ var player = Character{
     .y = 320,
 };
 
-var randombacker = std.rand.DefaultPrng.init(82715);
+// 82715
+var randombacker = std.rand.DefaultPrng.init(82724);
 export var rng: std.rand.Random = undefined;
 
 export fn start() void {

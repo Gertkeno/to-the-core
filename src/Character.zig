@@ -39,7 +39,8 @@ const Self = @This();
 
 x: i32 = 80 << SubRatio,
 y: i32 = 80 << SubRatio,
-animation: u8 = 0,
+walkanimation: u8 = 0,
+toolanimation: u8 = 0,
 toolerror: ?u8 = null,
 flipme: bool = false,
 heldup: i2 = 0,
@@ -73,7 +74,7 @@ fn draw_tool(self: Self) void {
     const tool = self.tool_tile_position();
 
     // crosshair
-    const flags = w4.BLIT_1BPP | if (self.animation & 8 != 0) w4.BLIT_FLIP_Y else 0;
+    const flags = w4.BLIT_1BPP | if (self.toolanimation & 8 != 0) w4.BLIT_FLIP_Y else 0;
     if (self.toolerror != null and self.toolerror.? & 4 != 0) {
         w4.DRAW_COLORS.* = 0x14;
     } else {
@@ -111,7 +112,7 @@ fn draw_tool(self: Self) void {
 pub fn draw(self: Self) void {
     w4.DRAW_COLORS.* = 0x4023;
     const flags = w4.BLIT_2BPP | if (self.flipme) w4.BLIT_FLIP_X else 0;
-    w4.blit(&frames[self.animation >> 2], self.x >> SubRatio, self.y >> SubRatio, 4, 6, flags);
+    w4.blit(&frames[self.walkanimation >> 2], self.x >> SubRatio, self.y >> SubRatio, 4, 6, flags);
 
     if (self.toolSelecting) |ts| {
         ts.draw();
@@ -149,6 +150,7 @@ pub fn update(self: *Self, controls: Controller) void {
         return;
     }
 
+    self.toolanimation +%= 1;
     if (self.toolerror) |*tr| {
         tr.* += 1;
         if (tr.* == 45) {
@@ -198,9 +200,9 @@ pub fn update(self: *Self, controls: Controller) void {
     }
 
     if (@bitCast(u8, controls.held) & 0b11110000 != 0) {
-        self.animation += 1;
-        if (self.animation >= (frames.len << 2)) {
-            self.animation = 0;
+        self.walkanimation += 1;
+        if (self.walkanimation >= (frames.len << 2)) {
+            self.walkanimation = 0;
         }
     }
 

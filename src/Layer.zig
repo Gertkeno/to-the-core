@@ -10,6 +10,7 @@ pub const Tiles = enum(u8) {
     empty,
     stone,
     spring,
+    deposit,
     // built //
     siphon,
     housing,
@@ -19,7 +20,7 @@ tiles: [380]Tiles = undefined,
 
 fn is_stone(tile: Tiles) bool {
     return switch (tile) {
-        .stone, .spring => true,
+        .stone, .spring, .deposit => true,
         else => false,
     };
 }
@@ -68,7 +69,7 @@ fn draw_tile(self: Self, index: usize) void {
     const x: i32 = @intCast(i32, index % 20 * 8);
     const y: i32 = @intCast(i32, index / 20 * 8) + 8;
     switch (tile) {
-        .stone => {
+        .stone, .spring, .deposit => {
             w4.DRAW_COLORS.* = 0x43;
             const stones = self.get_surrounding_tile(index, is_stone);
             Cave.blitstone(stones, x, y);
@@ -76,14 +77,6 @@ fn draw_tile(self: Self, index: usize) void {
         .empty => {
             w4.DRAW_COLORS.* = 0x21;
             Cave.blitempty(self.get_surrounding_tile(index, is_empty), x, y);
-        },
-        .spring => {
-            w4.DRAW_COLORS.* = 0x43;
-            const stones = self.get_surrounding_tile(index, is_stone);
-            Cave.blitstone(stones, x, y);
-
-            w4.DRAW_COLORS.* = 0x10;
-            w4.blit(&Cave.Spring, x, y, 8, 8, 0);
         },
         .siphon => {
             w4.DRAW_COLORS.* = 0x12;
@@ -93,6 +86,20 @@ fn draw_tile(self: Self, index: usize) void {
             w4.DRAW_COLORS.* = 0x12;
             w4.blit(&Build.Lair, x, y, 8, 8, 0);
         },
+    }
+
+    // extra cave draws
+    switch (tile) {
+        .spring => {
+            w4.DRAW_COLORS.* = 0x10;
+            w4.blit(&Cave.Spring, x, y, 8, 8, 0);
+        },
+        .deposit => {
+            w4.DRAW_COLORS.* = 0x20;
+            const flippy = (index % 31) & 0b1110;
+            w4.blit(&Cave.Deposit, x, y, 8, 8, flippy);
+        },
+        else => {},
     }
 }
 
@@ -169,7 +176,7 @@ fn simulate_cave(oldmap: []const bool, newmap: []bool) void {
 }
 
 pub fn init_cave(self: *Self, layer: i32, rng: std.rand.Random) void {
-    var caveOldBuffer: [380]bool = undefined; // bitsets generate nearly 26k of code !?
+    var caveOldBuffer: [380]bool = undefined;
     var caveNewBuffer: [380]bool = undefined;
 
     for (caveOldBuffer) |*b| {
@@ -188,13 +195,27 @@ pub fn init_cave(self: *Self, layer: i32, rng: std.rand.Random) void {
 
     var springs = std.math.max(5 - (layer >> 3), 1);
     while (springs > 0) : (springs -= 1) {
-        const index = rng.uintAtMost(u32, 380);
+        const index = rng.uintAtMost(u32, 379);
         self.tiles[index] = .spring;
     }
 
     const startsquare = [_]usize{ 189, 190, 170, 210 };
     for (startsquare) |index| {
         self.tiles[index] = .empty;
+    }
+
+    for (caveOldBuffer) |*b| {
+        b.* = rng.boolean();
+    }
+
+    simulate_cave(&caveOldBuffer, &caveNewBuffer);
+    std.mem.copy(bool, &caveOldBuffer, &caveNewBuffer);
+    simulate_cave(&caveOldBuffer, &caveNewBuffer);
+
+    for (self.tiles) |*tile, n| {
+        if (!caveNewBuffer[n] and tile.* == .stone) {
+            tile.* = .deposit;
+        }
     }
 }
 
@@ -217,6 +238,6 @@ pub fn walkable(self: Self, x: i32, y: i32) bool {
     const tile = self.tiles[index];
     return switch (tile) {
         .empty, .siphon, .housing => true,
-        .stone, .spring => false,
+        .stone, .spring, .deposit => false,
     };
 }
