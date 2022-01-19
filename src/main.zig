@@ -32,7 +32,6 @@ export fn start() void {
 
     map.init_cave(0, rng);
     LayerProgress.init();
-    player.resourcePreview = &bank.stockpile.mana;
 }
 
 export fn update() void {
@@ -41,6 +40,7 @@ export fn update() void {
     controls.update(w4.GAMEPAD1.*);
     map.draw_full();
 
+    bank.update();
     player.update(controls);
     player.draw();
 

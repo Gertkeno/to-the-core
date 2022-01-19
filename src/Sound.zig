@@ -12,7 +12,7 @@ adsr: packed struct {
     release: u8 = 4,
     decay: u8 = 0,
     attack: u8 = 0,
-},
+} = .{},
 
 volume: u8 = 75,
 

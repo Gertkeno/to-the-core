@@ -1,5 +1,5 @@
 const w4 = @import("wasm4.zig");
-const math = @import("std").math;
+const std = @import("std");
 
 // animtion frames
 const _1 = [6]u8{ 0xb6, 0xf3, 0x82, 0x3c, 0xbe, 0x38 };
@@ -46,10 +46,11 @@ heldup: i2 = 0,
 
 toolSelecting: ?ToolSelector = null,
 tool: ?Belt = null,
-resourcePreview: ?*const u32 = null,
+
+var toolTextBuffer: [7]u8 = undefined;
 
 // I use a lot of bitshifts since x/y are not going to be negative but will be
-// used in signed math, and I only want to divide by 4 (>>2) where player
+// used in signed std.math, and I only want to divide by 4 (>>2) where player
 // movement is sub-frame. For divisions by 32 (>>5) we convert player's
 // subframe position to the 20x19 tilegrid
 
@@ -58,9 +59,9 @@ fn tool_tile_position(self: Self) struct { x: i32, y: i32 } {
     if (self.heldup == 0) {
         xoffset += if (self.flipme) @as(i32, -32) else 28;
     }
-    const toolx: i32 = math.clamp((self.x + xoffset) >> TileRatio, 0, 19);
+    const toolx: i32 = std.math.clamp((self.x + xoffset) >> TileRatio, 0, 19);
     const yoffset: i32 = 32 * @intCast(i32, self.heldup);
-    const tooly: i32 = math.clamp((self.y + 12 - 32 + yoffset) >> TileRatio, 0, 18);
+    const tooly: i32 = std.math.clamp((self.y + 12 - 32 + yoffset) >> TileRatio, 0, 18);
 
     return .{
         .x = toolx,
@@ -71,6 +72,7 @@ fn tool_tile_position(self: Self) struct { x: i32, y: i32 } {
 fn draw_tool(self: Self) void {
     const tool = self.tool_tile_position();
 
+    // crosshair
     const flags = w4.BLIT_1BPP | if (self.animation & 8 != 0) w4.BLIT_FLIP_Y else 0;
     if (self.toolerror != null and self.toolerror.? & 4 != 0) {
         w4.DRAW_COLORS.* = 0x14;
@@ -79,9 +81,31 @@ fn draw_tool(self: Self) void {
     }
     w4.blit(&crosshair, tool.x * 8, (tool.y + 1) * 8, 8, 8, flags);
 
+    // stockpile check //
     w4.DRAW_COLORS.* = 0x21;
-    const xflip = if (tool.x < 6 and tool.y > 11) @as(i32, 152) else 0;
-    w4.blit(self.tool.?.icon, xflip, 152, 8, 8, w4.BLIT_1BPP);
+    const xflip = tool.x < 6 and tool.y > 11;
+    const xflipoffset = if (xflip) @as(i32, 152) else 0;
+    w4.blit(self.tool.?.icon, xflipoffset, 152, 8, 8, w4.BLIT_1BPP);
+    if (self.tool.?.currency != .None) {
+        const instock = switch (self.tool.?.currency) {
+            .Mana => bank.stockpile.mana >> Bank.Ratio,
+            .Amber => bank.stockpile.amber >> Bank.Ratio,
+            .Housing => bank.stockpile.housing,
+            .None => unreachable,
+        };
+
+        const tooltext = std.fmt.bufPrint(&toolTextBuffer, "{d}/{d}", .{
+            instock,
+            self.tool.?.cost,
+        }) catch "";
+
+        if (xflip) {
+            const offset = @intCast(i32, 152 - tooltext.len * 8);
+            w4.text(tooltext, offset, 152);
+        } else {
+            w4.text(tooltext, 8, 152);
+        }
+    }
 }
 
 pub fn draw(self: Self) void {
@@ -97,8 +121,8 @@ pub fn draw(self: Self) void {
 }
 
 pub fn player_tile_position(self: Self) usize {
-    const x: i32 = math.clamp((self.x + 8) >> TileRatio, 0, 19);
-    const y: i32 = math.clamp((self.y - 20) >> TileRatio, 0, 18);
+    const x: i32 = std.math.clamp((self.x + 8) >> TileRatio, 0, 19);
+    const y: i32 = std.math.clamp((self.y - 20) >> TileRatio, 0, 18);
 
     return @intCast(usize, x + y * 20);
 }
@@ -143,9 +167,9 @@ pub fn update(self: *Self, controls: Controller) void {
     }
 
     { // x simple collision detection
-        const y = math.clamp((self.y - 20) >> TileRatio, 0, 18);
-        const xl = math.clamp(self.x >> TileRatio, 0, 19);
-        const xr = math.clamp((self.x + 12) >> TileRatio, 0, 19);
+        const y = std.math.clamp((self.y - 20) >> TileRatio, 0, 18);
+        const xl = std.math.clamp(self.x >> TileRatio, 0, 19);
+        const xr = std.math.clamp((self.x + 12) >> TileRatio, 0, 19);
         if (self.x < 0 or !map.walkable(xl, y)) {
             self.x += 2;
         } else if (self.x > (156 << 2) + 2 or !map.walkable(xr, y)) {
@@ -162,9 +186,9 @@ pub fn update(self: *Self, controls: Controller) void {
     }
 
     { // y simple collision detection
-        const yt = math.clamp((self.y - 20) >> TileRatio, 0, 18);
-        const yb = math.clamp((self.y - 12) >> TileRatio, 0, 18);
-        const x = math.clamp((self.x + 6) >> TileRatio, 0, 19);
+        const yt = std.math.clamp((self.y - 20) >> TileRatio, 0, 18);
+        const yb = std.math.clamp((self.y - 12) >> TileRatio, 0, 18);
+        const x = std.math.clamp((self.x + 6) >> TileRatio, 0, 19);
 
         if (self.y < 32 or !map.walkable(x, yt)) {
             self.y += 2;

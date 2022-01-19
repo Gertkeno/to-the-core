@@ -12,6 +12,7 @@ pub const Tiles = enum(u8) {
     spring,
     // built //
     siphon,
+    housing,
 };
 
 tiles: [380]Tiles = undefined,
@@ -24,7 +25,10 @@ fn is_stone(tile: Tiles) bool {
 }
 
 fn is_empty(tile: Tiles) bool {
-    return tile == .empty;
+    return switch (tile) {
+        .empty => true,
+        else => false,
+    };
 }
 
 fn get_surrounding_tile(self: Self, index: usize, func: fn (Tiles) bool) Cave.Faces {
@@ -84,6 +88,10 @@ fn draw_tile(self: Self, index: usize) void {
         .siphon => {
             w4.DRAW_COLORS.* = 0x12;
             w4.blit(&Build.Siphon, x, y, 8, 8, 0);
+        },
+        .housing => {
+            w4.DRAW_COLORS.* = 0x12;
+            w4.blit(&Build.Lair, x, y, 8, 8, 0);
         },
     }
 }
@@ -208,7 +216,7 @@ pub fn walkable(self: Self, x: i32, y: i32) bool {
     const index = @intCast(usize, x + y * 20);
     const tile = self.tiles[index];
     return switch (tile) {
-        .empty, .siphon => true,
-        else => false,
+        .empty, .siphon, .housing => true,
+        .stone, .spring => false,
     };
 }

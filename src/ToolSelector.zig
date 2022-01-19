@@ -37,10 +37,8 @@ pub fn selecting(self: *Self, char: *Character, controls: Controller) bool {
     if (controls.released.x) {
         if (self.index == Tool.array.len) {
             char.tool = null;
-            char.resourcePreview = null;
         } else {
             char.tool = Tool.array[self.index];
-            char.resourcePreview = &bank.stockpile.mana;
         }
         ticky.play();
         return true;
