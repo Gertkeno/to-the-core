@@ -41,9 +41,13 @@ export fn update() void {
     controls.update(w4.GAMEPAD1.*);
     map.draw_full();
 
-    bank.update();
+    map.update();
     player.update(controls);
     player.draw();
+
+    map.check_pickups(player.x, player.y);
+
+    map.draw_pickups();
 
     if (false and controls.released.y) {
         map.init_cave(LayerProgress.get_current(), rng);

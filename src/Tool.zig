@@ -79,16 +79,16 @@ const icon_dig = [8]u8{
 };
 
 pub fn dig(index: usize) bool {
-    if (bank.stockpile.mana < Bank.at_ratio(1))
+    if (bank.stockpile.mana < 1)
         return false;
 
     const tile = &map.tiles[index];
     if (tile.* != .stone and tile.* != .deposit)
         return false;
 
-    bank.stockpile.mana -= Bank.at_ratio(1);
+    bank.stockpile.mana -= 1;
     if (tile.* == .deposit)
-        bank.stockpile.amber += Bank.at_ratio(1);
+        bank.stockpile.amber += 1;
 
     brickBreak.play();
     tile.* = .empty;
@@ -131,7 +131,7 @@ const icon_house = [8]u8{
 
 const housingCost = 4; // amber
 pub fn build_housing(index: usize) bool {
-    if (bank.stockpile.amber < housingCost << Bank.Ratio)
+    if (bank.stockpile.amber < housingCost)
         return false;
 
     const tile = &map.tiles[index];
@@ -146,7 +146,7 @@ pub fn build_housing(index: usize) bool {
         bank.stockpile.housing += 1;
         sfxHousingLow.play();
     }
-    bank.stockpile.amber -= housingCost << Bank.Ratio;
+    bank.stockpile.amber -= housingCost;
     return true;
 }
 
@@ -170,15 +170,11 @@ pub fn build_siphon(index: usize) bool {
         return false;
 
     const tile = &map.tiles[index];
-    if (tile.* != .empty)
-        return false;
-
-    if (direct_neighbors(index, .spring) == 0)
+    if (tile.* != .spring)
         return false;
 
     tile.* = .siphon;
     bank.stockpile.housing -= 1;
-    bank.calculated.mana += Bank.per_second(0.025);
     sfxSiphon.play();
     return true;
 }

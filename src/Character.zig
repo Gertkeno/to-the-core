@@ -50,6 +50,34 @@ tool: ?Belt = null,
 
 var toolTextBuffer: [7]u8 = undefined;
 
+fn tool_tip_stringify(mstock: u32, mcost: u32) []const u8 {
+    var cost = mcost;
+    var index: usize = 6;
+    while (cost > 0) {
+        toolTextBuffer[index] = '0' + @intCast(u8, cost % 10);
+        index -= 1;
+        cost /= 10;
+    }
+
+    toolTextBuffer[index] = '/';
+    index -= 1;
+
+    if (mstock == 0) {
+        toolTextBuffer[index] = '0';
+        index -= 1;
+    } else {
+        var stock = mstock;
+        while (stock > 0) {
+            toolTextBuffer[index] = '0' + @intCast(u8, stock % 10);
+            index -= 1;
+            stock /= 10;
+        }
+    }
+
+    const output = toolTextBuffer[index + 1 ..];
+    return output;
+}
+
 // I use a lot of bitshifts since x/y are not going to be negative but will be
 // used in signed std.math, and I only want to divide by 4 (>>2) where player
 // movement is sub-frame. For divisions by 32 (>>5) we convert player's
@@ -89,16 +117,13 @@ fn draw_tool(self: Self) void {
     w4.blit(self.tool.?.icon, xflipoffset, 152, 8, 8, w4.BLIT_1BPP);
     if (self.tool.?.currency != .None) {
         const instock = switch (self.tool.?.currency) {
-            .Mana => bank.stockpile.mana >> Bank.Ratio,
-            .Amber => bank.stockpile.amber >> Bank.Ratio,
+            .Mana => bank.stockpile.mana,
+            .Amber => bank.stockpile.amber,
             .Housing => bank.stockpile.housing,
             .None => unreachable,
         };
 
-        const tooltext = std.fmt.bufPrint(&toolTextBuffer, "{d}/{d}", .{
-            instock,
-            self.tool.?.cost,
-        }) catch "";
+        const tooltext = tool_tip_stringify(instock, self.tool.?.cost);
 
         if (xflip) {
             const offset = @intCast(i32, 152 - tooltext.len * 8);
