@@ -226,7 +226,7 @@ pub fn init_cave(self: *Self, layer: i32, myrng: std.rand.Random) void {
         tile.* = if (caveOldBuffer[n]) .stone else .empty;
     }
 
-    var springs = std.math.max(5 - (layer >> 3), 1);
+    var springs = std.math.max(5 - (layer >> 2), 1);
     while (springs > 0) : (springs -= 1) {
         const index = myrng.uintAtMost(u32, 379);
         self.tiles[index] = .spring;
@@ -314,6 +314,11 @@ const weaveryInterval = 2000;
 const siphonInterval = 600;
 pub fn update(self: *Self) void {
     self.frameCount +%= 1;
+
+    // always spawn a crystal in the center for saftey
+    if (self.frameCount % siphonInterval == 0 and self.tiles[190] == .empty) {
+        self.add_pickup(190, .Mana);
+    }
 
     for (self.tiles) |tile, n| {
         switch (tile) {

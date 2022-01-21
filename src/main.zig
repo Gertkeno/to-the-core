@@ -39,6 +39,7 @@ export fn update() void {
         bank.stockpile.drill += bank.drillgen;
     } else {
         bank.stockpile.drill = 0;
+        bank.drillgen = 0;
         LayerProgress.increment();
         LayerProgress.draw(0);
 
