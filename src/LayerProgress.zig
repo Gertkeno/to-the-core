@@ -68,7 +68,7 @@ pub fn get_current() u8 {
     return currentlayer;
 }
 
-pub fn draw(progress: i16) void {
+pub fn draw(progress: u32) void {
     if (progress > 0) {
         rng.bytes(w4.FRAMEBUFFER[0..320]);
 
@@ -79,7 +79,7 @@ pub fn draw(progress: i16) void {
                 byte.* |= 0b10101010;
 
                 if (p2 == x) {
-                    const m4: i16 = @mod(progress, 4);
+                    const m4: u32 = @mod(progress, 4);
                     byte.* &= switch (m4) {
                         0 => 0b00000000,
                         1 => 0b00000011,

@@ -3,6 +3,7 @@ const w4 = @import("wasm4.zig");
 
 const Cave = @import("Caveart.zig");
 const Build = @import("Buildart.zig");
+const Sound = @import("Sound.zig");
 const Pickup = @import("Pickup.zig");
 
 const Self = @This();
@@ -18,6 +19,8 @@ pub const Tiles = enum(u8) {
     // built //
     siphon,
     housing,
+    weavery,
+    drill,
 };
 
 tiles: [380]Tiles = undefined,
@@ -34,7 +37,7 @@ fn is_raised(tile: Tiles) bool {
         .deposit,
         .siphon,
         => true,
-        .empty, .housing => false,
+        .empty, .drill, .housing, .weavery => false,
     };
 }
 
@@ -48,7 +51,8 @@ fn is_empty(tile: Tiles) bool {
 pub fn walkable(self: Self, x: i32, y: i32) bool {
     const index = @intCast(usize, x + y * 20);
     const tile = self.tiles[index];
-    return !is_raised(tile);
+
+    return tile == .empty;
 }
 
 fn get_surrounding_tile(self: Self, index: usize, func: fn (Tiles) bool) Cave.Faces {
@@ -89,7 +93,7 @@ fn draw_tile(self: Self, index: usize) void {
     const x: i32 = @intCast(i32, index % 20 * 8);
     const y: i32 = @intCast(i32, index / 20 * 8) + 8;
     switch (tile) {
-        .stone, .spring, .deposit => {
+        .stone, .spring, .deposit, .siphon => {
             w4.DRAW_COLORS.* = 0x43;
             const stones = self.get_surrounding_tile(index, is_raised);
             Cave.blitstone(stones, x, y);
@@ -98,13 +102,17 @@ fn draw_tile(self: Self, index: usize) void {
             w4.DRAW_COLORS.* = 0x21;
             Cave.blitempty(self.get_surrounding_tile(index, is_empty), x, y);
         },
-        .siphon => {
-            w4.DRAW_COLORS.* = 0x34;
-            w4.blit(&Build.Siphon, x, y, 8, 8, 0);
-        },
         .housing => {
-            w4.DRAW_COLORS.* = 0x12;
-            w4.blit(&Build.Lair, x, y, 8, 8, 0);
+            w4.DRAW_COLORS.* = 0x1231;
+            w4.blit(&Build.Lair, x, y, 8, 8, 1);
+        },
+        .weavery => {
+            w4.DRAW_COLORS.* = 0x1234;
+            w4.blit(&Build.Weavery, x, y, 8, 8, 1);
+        },
+        .drill => {
+            w4.DRAW_COLORS.* = 0x1234;
+            w4.blit(&Build.Drill, x, y, 8, 8, 1);
         },
     }
 
@@ -118,6 +126,10 @@ fn draw_tile(self: Self, index: usize) void {
             w4.DRAW_COLORS.* = 0x20;
             const flippy = (index % 31) & 0b1110;
             w4.blit(&Cave.Deposit, x, y, 8, 8, flippy);
+        },
+        .siphon => {
+            w4.DRAW_COLORS.* = 0x20;
+            w4.blit(&Build.Siphon, x, y, 8, 8, 0);
         },
         else => {},
     }
@@ -143,6 +155,7 @@ pub fn draw_at(self: Self, x: i32, y: i32) void {
 
 // INITIALIZEATION //
 pub fn init_blank(self: *Self) void {
+    self.active = 0;
     for (self.tiles) |*tile| {
         tile.* = .stone;
     }
@@ -195,6 +208,7 @@ fn simulate_cave(oldmap: []const bool, newmap: []bool) void {
 }
 
 pub fn init_cave(self: *Self, layer: i32, myrng: std.rand.Random) void {
+    self.active = 0;
     var caveOldBuffer: [380]bool = undefined;
     var caveNewBuffer: [380]bool = undefined;
 
@@ -264,28 +278,40 @@ fn random_in_tile(index: usize) Point {
     const y = @intCast(i32, index / 20);
 
     return Point{
-        .x = x * 8 + rng.uintAtMost(u8, 8),
-        .y = y * 8 + rng.uintAtMost(u8, 8),
+        .x = x * 8 + rng.uintAtMost(u8, 4),
+        .y = y * 8 + rng.uintAtMost(u8, 4) + 8,
     };
 }
 
-fn random_in_adjacent(index: usize) Point {
+fn random_adjacent_tile(index: usize) usize {
     const sindex = @intCast(i32, index);
     const surrounding = [_]i8{ -20, -1, 1, 20 };
-    const diff = surrounding[rng.uintLessThan(u8, 4)];
-    if (-diff > index or sindex + diff > 380) {
+    const diff = surrounding[rng.uintLessThanBiased(u8, 4)];
+    if (sindex + diff < 0 or sindex + diff > 380) {
         for (surrounding) |ndiff| {
-            if (-ndiff < index and sindex + ndiff < 380) {
-                return random_in_tile(@intCast(usize, sindex + ndiff));
+            if (sindex + ndiff > 0 and sindex + ndiff < 380) {
+                return @intCast(usize, sindex + ndiff);
             }
         }
         unreachable;
     } else {
-        return random_in_tile(@intCast(usize, sindex + diff));
+        return @intCast(usize, sindex + diff);
     }
 }
 
-const siphonInterval = 120;
+pub fn add_pickup(self: *Self, index: usize, currency: Bank.CurrencyType) void {
+    const pos = random_in_tile(index);
+    if (self.active < self.pickups.len) {
+        self.pickups[self.active] = Pickup.init_xy(pos.x, pos.y, currency);
+        self.active += 1;
+    } else {
+        self.pickups[rng.uintLessThanBiased(u8, self.pickups.len)] = Pickup.init_xy(pos.x, pos.y, currency);
+        //w4.trace("pickups full");
+    }
+}
+
+const weaveryInterval = 2000;
+const siphonInterval = 600;
 pub fn update(self: *Self) void {
     self.frameCount +%= 1;
 
@@ -293,38 +319,47 @@ pub fn update(self: *Self) void {
         switch (tile) {
             .siphon => {
                 if ((n + self.frameCount) % siphonInterval != 0)
-                    return;
+                    continue;
 
-                if (self.active < self.pickups.len) {
-                    const pos = random_in_adjacent(n);
-                    self.pickups[self.active] = Pickup.init_xy(pos.x, pos.y, .Mana);
-                    self.active += 1;
-                }
+                self.add_pickup(random_adjacent_tile(n), .Mana);
+            },
+            .weavery => {
+                if ((n * n + self.frameCount) % weaveryInterval != 0)
+                    continue;
+                self.add_pickup(random_adjacent_tile(n), .Amber);
             },
             else => {},
         }
     }
 
-    for (self.pickups[0..self.active]) |*pickup, n| {
+    for (self.pickups[0..self.active]) |*pickup| {
         pickup.update();
-        if (pickup.state == .Dead) {
-            self.active -= 1;
-            std.mem.swap(Pickup, &self.pickups[self.active], &self.pickups[n]);
-            break;
-        }
     }
 }
 
 pub fn draw_pickups(self: Self) void {
-    w4.DRAW_COLORS.* = 0x2034;
+    w4.DRAW_COLORS.* = 0x2430;
     for (self.pickups[0..self.active]) |pickup| {
         pickup.draw();
     }
 }
 
+const sfxPickup = Sound{
+    .freq = .{
+        .start = 900,
+    },
+};
 const Bank = @import("Bank.zig");
 pub fn check_pickups(self: *Self, charx: i32, chary: i32) ?Bank.CurrencyType {
-    for (self.pickups[0..self.active]) |pickup| {
-        if (pickup.contact(charx, chary)) {}
+    for (self.pickups[0..self.active]) |pickup, n| {
+        if (pickup.contact(charx, chary)) {
+            sfxPickup.play();
+            const c = pickup.currency;
+            self.active -= 1;
+            std.mem.swap(Pickup, &self.pickups[self.active], &self.pickups[n]);
+            return c;
+        }
     }
+
+    return null;
 }

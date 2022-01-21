@@ -1,20 +1,25 @@
+const Character = @import("Character.zig");
 const Layer = @import("Layer.zig");
+
 const Caveart = @import("Caveart.zig");
+
 const Bank = @import("Bank.zig");
 const Sound = @import("Sound.zig");
 const w4 = @import("wasm4.zig");
 
 extern var bank: Bank;
 extern var map: Layer;
+extern var player: Character;
 
 fn direct_neighbors(index: usize, tile: Layer.Tiles) u2 {
     var count: u2 = 0;
     const neighbors = [_]i32{ -20, -1, 1, 20 };
+    const sindex = @intCast(i32, index);
     for (neighbors) |diff| {
-        if (-diff > index and map.tiles.len - index < diff)
+        if (sindex + diff < 0 or sindex + diff > map.tiles.len)
             continue;
 
-        const neighbor = map.tiles[index + @intCast(usize, diff)];
+        const neighbor = map.tiles[@intCast(usize, sindex + diff)];
         if (tile == .stone and (neighbor == .spring or neighbor == .deposit)) {
             count += 1;
         } else if (neighbor == tile) {
@@ -88,7 +93,7 @@ pub fn dig(index: usize) bool {
 
     bank.stockpile.mana -= 1;
     if (tile.* == .deposit)
-        bank.stockpile.amber += 1;
+        map.add_pickup(index, .Amber);
 
     brickBreak.play();
     tile.* = .empty;
@@ -179,6 +184,96 @@ pub fn build_siphon(index: usize) bool {
     return true;
 }
 
+const icon_weavery = [8]u8{
+    0b00101000,
+    0b10010101,
+    0b10101001,
+    0b10010101,
+    0b10101001,
+    0b10010101,
+    0b10000001,
+    0b00000000,
+};
+
+const weaveryCost = 10; // mana
+pub fn build_weavery(index: usize) bool {
+    if (bank.stockpile.mana < weaveryCost)
+        return false;
+
+    const tile = &map.tiles[index];
+    if (tile.* != .housing)
+        return false;
+
+    tile.* = .weavery;
+    sfxHousingHigh.play();
+    bank.stockpile.mana -= weaveryCost;
+    return true;
+}
+
+const icon_drill = [8]u8{
+    0b01111110,
+    0b00111100,
+    0b00111100,
+    0b00010000,
+    0b00011000,
+    0b00011000,
+    0b00001000,
+    0b00000000,
+};
+
+const drillCost = 4;
+pub fn build_drill(index: usize) bool {
+    if (bank.stockpile.housing < drillCost)
+        return false;
+
+    const tile = &map.tiles[index];
+    if (tile.* != .empty)
+        return false;
+
+    tile.* = .drill;
+    sfxHousingLow.play();
+    bank.drillgen += 1;
+    bank.stockpile.housing -= drillCost;
+    return true;
+}
+
+const icon_teleport = [8]u8{
+    0b00011000,
+    0b00110100,
+    0b00011000,
+    0b00111100,
+    0b10011001,
+    0b01011010,
+    0b10100101,
+    0b01011010,
+};
+
+const sfxTeleport = Sound{
+    .freq = .{
+        .start = 100,
+        .end = 500,
+    },
+
+    .adsr = .{
+        .attack = 30,
+    },
+
+    .mode = w4.TONE_NOISE,
+};
+var teleporterPos: ?usize = null;
+const teleportCost = 4;
+pub fn teleport(index: usize) bool {
+    if (bank.stockpile.mana < teleportCost)
+        return false;
+    _ = index;
+
+    player.x = 82 << 2;
+    player.y = 81 << 2;
+    sfxTeleport.play();
+    bank.stockpile.mana -= teleportCost;
+    return true;
+}
+
 pub const Belt = struct {
     icon: *const [8]u8,
     func: fn (usize) bool,
@@ -195,25 +290,39 @@ pub const array = [_]Belt{
         .currency = Bank.CurrencyType.Mana,
         .name = "dig",
     },
-    //.{
-    //.icon = &icon_sell,
-    //.func = sell,
-    //.cost = 0,
-    //.currency = Bank.CurrencyType.None,
-    //.name = "sell",
-    //},
     .{
         .icon = &icon_house,
         .func = build_housing,
         .cost = housingCost,
         .currency = Bank.CurrencyType.Amber,
-        .name = "Lair",
+        .name = "workshop",
     },
     .{
         .icon = &Caveart.Spring,
         .func = build_siphon,
         .cost = siphonCost,
         .currency = Bank.CurrencyType.Housing,
-        .name = "Siphon",
+        .name = "spring",
+    },
+    .{
+        .icon = &icon_weavery,
+        .func = build_weavery,
+        .cost = weaveryCost,
+        .currency = Bank.CurrencyType.Mana,
+        .name = "weavery",
+    },
+    .{
+        .icon = &icon_drill,
+        .func = build_drill,
+        .cost = drillCost,
+        .currency = Bank.CurrencyType.Housing,
+        .name = "drill",
+    },
+    .{
+        .icon = &icon_teleport,
+        .func = teleport,
+        .cost = teleportCost,
+        .currency = Bank.CurrencyType.Mana,
+        .name = "teleport",
     },
 };

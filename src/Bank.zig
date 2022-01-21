@@ -1,8 +1,10 @@
 const Self = @This();
 const std = @import("std");
 
-pub const CurrencyType = enum { Mana, Amber, Housing, None };
+// 15 seconds for 1 point of 160, about 30 minutes with 1 drill going
+pub const DrillShift = 10;
 
+pub const CurrencyType = enum { Mana, Amber, Housing, None };
 pub const Currency = struct {
     mana: u32 = 0,
     amber: u32 = 0,
@@ -14,11 +16,4 @@ stockpile: Currency = .{
     .mana = 8,
     .amber = 2,
 },
-
-pub fn at_ratio(comptime f: f64) u32 {
-    return @floatToInt(u32, f * (1 << 20));
-}
-
-pub fn per_second(comptime f: f64) u32 {
-    return at_ratio(f / 60);
-}
+drillgen: u32 = 0,

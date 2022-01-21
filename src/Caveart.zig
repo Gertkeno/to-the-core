@@ -144,20 +144,15 @@ const std = @import("std").mem;
 
 fn bor_tile(face: Faces, tileset: []const [8]u8) u64 {
     var buffer: u64 = 0;
-    if (!face.left) {
-        buffer |= std.bytesAsValue(u64, &tileset[0]).*;
-    }
-    if (!face.right) {
-        buffer |= std.bytesAsValue(u64, &tileset[1]).*;
-    }
-    if (!face.up) {
-        buffer |= std.bytesAsValue(u64, &tileset[2]).*;
-    }
-    if (!face.down) {
-        buffer |= std.bytesAsValue(u64, &tileset[3]).*;
+    var i: u3 = 0;
+    while (i < 4) : (i += 1) {
+        if (@bitCast(u4, face) & (@as(u5, 1) << i) == 0) {
+            buffer |= std.bytesAsValue(u64, &tileset[i]).*;
+        }
     }
 
     if (buffer == 0) {
+        // sometimes debug-unreachable crashes?? hard coded indecies?
         buffer |= std.bytesAsValue(u64, &tileset[4]).*;
     }
 

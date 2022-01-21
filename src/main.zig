@@ -14,10 +14,7 @@ var controls = Controller{};
 
 export var map = Layer{};
 export var bank = Bank{};
-var player = Character{
-    .x = 320,
-    .y = 320,
-};
+export var player = Character{};
 
 // 82715
 var randombacker = std.rand.DefaultPrng.init(82724);
@@ -36,22 +33,37 @@ export fn start() void {
 }
 
 export fn update() void {
-    LayerProgress.draw(0);
+    LayerProgress.draw(bank.stockpile.drill >> Bank.DrillShift);
+
+    if (bank.stockpile.drill >> Bank.DrillShift < 161) {
+        bank.stockpile.drill += bank.drillgen;
+    } else {
+        bank.stockpile.drill = 0;
+        LayerProgress.increment();
+        LayerProgress.draw(0);
+
+        player = Character{};
+        map.init_cave(LayerProgress.get_current(), rng);
+    }
 
     controls.update(w4.GAMEPAD1.*);
     map.draw_full();
 
     map.update();
     player.update(controls);
-    player.draw();
-
-    map.check_pickups(player.x, player.y);
 
     map.draw_pickups();
+    player.draw();
 
-    if (false and controls.released.y) {
-        map.init_cave(LayerProgress.get_current(), rng);
-        LayerProgress.increment();
-        LayerProgress.draw(0);
+    if (map.check_pickups(player.x >> 2, player.y >> 2)) |currency| {
+        switch (currency) {
+            .Mana => {
+                bank.stockpile.mana += 1;
+            },
+            .Amber => {
+                bank.stockpile.amber += 1;
+            },
+            .None, .Housing => unreachable,
+        }
     }
 }

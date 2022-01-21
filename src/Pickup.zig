@@ -6,11 +6,7 @@ const Bank = @import("Bank.zig");
 x: i32,
 y: i32,
 
-animationTime: u8 = 0,
-state: enum {
-    Active,
-    Dead,
-},
+animationTime: u16 = 0,
 currency: Bank.CurrencyType,
 
 const Self = @This();
@@ -26,16 +22,15 @@ pub fn init_xy(x: i32, y: i32, kind: Bank.CurrencyType) Self {
     return Self{
         .x = x,
         .y = y,
-        .state = .Active,
         .currency = kind,
     };
 }
 
-fn jump_anim_offset(time: u8) i32 {
+fn jump_anim_offset(time: u16) i32 {
     if (time > 50) {
         return 0;
     } else {
-        return (time % 20) / 4;
+        return (time % 20) / 8;
     }
 }
 
@@ -44,25 +39,19 @@ pub fn draw(self: Self) void {
     const x = self.x;
     const y = self.y;
 
-    if (self.state == .Active) {
-        const sprite: [*]const u8 = switch (self.currency) {
-            .Mana => &manacrystal,
-            .Amber => &amber,
-            else => unreachable,
-        };
-        const jump = jump_anim_offset(self.animationTime);
-        w4.blit(sprite, x, y + jump, Size, Size, w4.BLIT_2BPP);
-    } else {
-        const index = @intCast(usize, x + y * 160);
-        w4.FRAMEBUFFER[index] = 0x8F;
-        //
-    }
+    const sprite = switch (self.currency) {
+        .Mana => &gem,
+        .Amber => &brick,
+        .None, .Housing => unreachable,
+    };
+    const jump = jump_anim_offset(self.animationTime);
+    w4.blit(sprite.array, x, y + jump, sprite.width, sprite.height, sprite.flags);
 }
 
 pub fn contact(self: Self, x: i32, y: i32) bool {
-    if (x < self.x or x > self.x + Size) {
+    if (x + 4 < self.x or x > self.x + 4) {
         return false;
-    } else if (y < self.y or y > self.y + Size) {
+    } else if (y + 6 < self.y or y > self.y + 4) {
         return false;
     }
 
@@ -70,18 +59,29 @@ pub fn contact(self: Self, x: i32, y: i32) bool {
 }
 
 pub fn update(self: *Self) void {
-    self.animationTime += 1;
+    self.animationTime +%= 1;
 }
 
 //pub fn kill_to(self: *Self,
+const DrawStruct = struct {
+    width: i32,
+    height: i32,
+    flags: u32,
+    array: [*]const u8,
+};
 
-// manacrystal
-const manacrystal_width = 4;
-const manacrystal_height = 4;
-const manacrystal_flags = 1; // BLIT_2BPP
-const manacrystal = [4]u8{ 0x92, 0x7c, 0x72, 0x92 };
-// amber
-const amber_width = 4;
-const amber_height = 4;
-const amber_flags = 1; // BLIT_2BPP
-const amber = [4]u8{ 0x92, 0x72, 0xf4, 0xb0 };
+// _1brick
+const brick = DrawStruct{
+    .width = 4,
+    .height = 6,
+    .flags = 1,
+    .array = &[_]u8{ 0x02, 0x28, 0x68, 0x68, 0x6a, 0x96 },
+};
+
+// gem
+const gem = DrawStruct{
+    .width = 4,
+    .height = 6,
+    .flags = 1,
+    .array = &[_]u8{ 0x34, 0x34, 0xed, 0xda, 0x38, 0x38 },
+};
