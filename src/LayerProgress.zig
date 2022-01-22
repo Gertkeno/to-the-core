@@ -28,9 +28,9 @@ const palette: []const [4]u32 = &.{
 
 extern const rng: std.rand.Random;
 
-const majorLayerSize = 2;
+//const majorLayerSize = 2;
 fn set_layername(newlayer: u8) void {
-    const nameindex = newlayer / majorLayerSize;
+    const nameindex = newlayer;
     std.mem.set(u8, w4.FRAMEBUFFER[0..320], 0);
     if (nameindex >= names.len) {
         layername = "Winner!?";
@@ -42,10 +42,11 @@ fn set_layername(newlayer: u8) void {
     } else {
         const layertype = names[nameindex];
         std.mem.copy(u8, &layernamebuffer, layertype);
-        layernamebuffer[layertype.len] = ' ';
-        layernamebuffer[layertype.len + 1] = '0' + (newlayer % majorLayerSize + 1);
+        // up to 9 extra layers between major layer & palette changes
+        //layernamebuffer[layertype.len] = ' ';
+        //layernamebuffer[layertype.len + 1] = '0' + (newlayer % majorLayerSize + 1);
 
-        layername = layernamebuffer[0 .. layertype.len + 2];
+        layername = layernamebuffer[0..layertype.len];
 
         const npalette = palette[nameindex];
         for (w4.PALETTE.*) |*p, n| {
