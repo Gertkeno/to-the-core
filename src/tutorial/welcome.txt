@@ -1,4 +1,4 @@
-Welcome to freddy kruger dig dug!
-press Z to open tool selection
-then press X to select 'dig'!
-try mining some dotted ore for gems
+Welcome to freddy\kruger dig dug!
+press Z to open\tool selection
+then press X to\select 'dig'!
+try mining some\dotted ore for gems

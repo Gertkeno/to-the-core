@@ -60,9 +60,13 @@ pub fn init() void {
 
 pub fn increment() void {
     if (currentlayer < 255) {
-        currentlayer += 1;
-        set_layername(currentlayer);
+        set_layer(currentlayer + 1);
     }
+}
+
+pub fn set_layer(value: u8) void {
+    currentlayer = value;
+    set_layername(currentlayer);
 }
 
 pub fn get_current() u8 {

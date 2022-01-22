@@ -7,6 +7,7 @@ const Palette = @import("Palette.zig");
 
 const Layer = @import("Layer.zig");
 const LayerProgress = @import("LayerProgress.zig");
+const SaveData = @import("SaveData.zig");
 const Character = @import("Character.zig");
 const Tutorial = @import("TutorialWorm.zig");
 const Bank = @import("Bank.zig");
@@ -95,5 +96,7 @@ export fn update() void {
                 map.init_cave(LayerProgress.get_current(), rng);
             },
         }
+
+        SaveData.write_save();
     }
 }

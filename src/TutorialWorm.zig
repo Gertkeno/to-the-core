@@ -59,9 +59,10 @@ pub fn update_draw(controls: *Controller) bool {
     w4.blit(&freddy, 100, 82, freddy_width, freddy_height, freddy_flags);
     w4.DRAW_COLORS.* = 0x14;
     const animJump = jump(lineAnimation);
-    if (string.len > 20) {
-        w4.text(string[0..20], 0, 120 - animJump);
-        w4.text(string[20..], 0, 129 - animJump);
+
+    if (find(u8, string, 0, '\\')) |max| {
+        w4.text(string[0..max], 0, 120 - animJump);
+        w4.text(string[max + 1 ..], 0, 129 - animJump);
     } else {
         w4.text(string, 0, 120 - animJump);
     }
