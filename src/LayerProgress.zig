@@ -69,8 +69,25 @@ pub fn get_current() u8 {
     return currentlayer;
 }
 
+// ups
+const ups_width = 8;
+const ups_height = 8;
+const ups_flags = 1; // BLIT_2BPP
+const ups = [16]u8{ 0xb3, 0xb3, 0xc4, 0xc4, 0x19, 0x19, 0x6e, 0x6e, 0xb3, 0xb3, 0xc4, 0xc4, 0x19, 0x19, 0x6e, 0x6e };
+
+var animation: u8 = 0;
 pub fn draw(progress: u32) void {
-    if (progress > 0) {
+    if (progress >= 160) {
+        w4.DRAW_COLORS.* = 0x1234;
+        animation += 1;
+
+        var posx: i32 = 0;
+        const y: u8 = (animation / 16) % 4;
+        while (posx < 160) : (posx += 8) {
+            w4.blitSub(&ups, posx, 0, 8, y, 0, 8 - y, 8, ups_flags);
+            w4.blitSub(&ups, posx, y, 8, 8 - y, 0, 0, 8, ups_flags);
+        }
+    } else if (progress > 0) {
         rng.bytes(w4.FRAMEBUFFER[0..320]);
 
         const p2 = @divTrunc(progress, 4);

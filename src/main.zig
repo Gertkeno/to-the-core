@@ -62,17 +62,6 @@ export fn update() void {
 
     if (bank.stockpile.drill >> Bank.DrillShift < 161) {
         bank.stockpile.drill += bank.drillgen;
-    } else {
-        for (w4.FRAMEBUFFER[6280..6400]) |*byte, n| {
-            const x = n % 40;
-            byte.* = switch (n / 40 + ((x + map.frameCount / 16) & 1) % 4) { // finish line effect
-                3 => 0xFF,
-                2 => 0b10101010,
-                1 => 0b01010101,
-                0 => 0,
-                else => unreachable,
-            };
-        }
     }
 
     player.draw();

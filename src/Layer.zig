@@ -367,7 +367,7 @@ pub fn check_pickups(self: *Self, charx: i32, chary: i32) ?Bank.CurrencyType {
         }
     }
 
-    if (bank.stockpile.drill >= 160 << Bank.DrillShift and chary > 153) {
+    if (bank.stockpile.drill >= 160 << Bank.DrillShift and chary <= 8) {
         return .None;
     }
 
