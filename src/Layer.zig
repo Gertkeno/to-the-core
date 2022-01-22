@@ -226,7 +226,7 @@ pub fn init_cave(self: *Self, layer: i32, myrng: std.rand.Random) void {
         tile.* = if (caveOldBuffer[n]) .stone else .empty;
     }
 
-    var springs = std.math.max(5 - (layer >> 2), 1);
+    var springs = std.math.max(5 - (layer >> 1), 1);
     while (springs > 0) : (springs -= 1) {
         const index = myrng.uintAtMost(u32, 379);
         self.tiles[index] = .spring;

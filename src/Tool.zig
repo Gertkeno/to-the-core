@@ -22,6 +22,8 @@ fn direct_neighbors(index: usize, tile: Layer.Tiles) u2 {
         const neighbor = map.tiles[@intCast(usize, sindex + diff)];
         if (tile == .stone and (neighbor == .spring or neighbor == .deposit)) {
             count += 1;
+        } else if (tile == .housing and neighbor == .weavery) {
+            count += 1;
         } else if (neighbor == tile) {
             count += 1;
         }
@@ -143,14 +145,12 @@ pub fn build_housing(index: usize) bool {
     if (tile.* != .empty)
         return false;
 
+    if (direct_neighbors(index, .housing) >= 1)
+        return false;
+
+    bank.stockpile.housing += 2;
+    sfxHousingLow.play();
     tile.* = .housing;
-    if (direct_neighbors(index, .stone) >= 2) {
-        bank.stockpile.housing += 2;
-        sfxHousingHigh.play();
-    } else {
-        bank.stockpile.housing += 1;
-        sfxHousingLow.play();
-    }
     bank.stockpile.amber -= housingCost;
     return true;
 }
@@ -230,9 +230,15 @@ pub fn build_drill(index: usize) bool {
     if (tile.* != .empty)
         return false;
 
+    if (direct_neighbors(index, .stone) >= 3) {
+        bank.drillgen += 2;
+        sfxHousingHigh.play();
+    } else {
+        bank.drillgen += 1;
+        sfxHousingLow.play();
+    }
+
     tile.* = .drill;
-    sfxHousingLow.play();
-    bank.drillgen += 1;
     bank.stockpile.housing -= drillCost;
     return true;
 }

@@ -88,7 +88,12 @@ fn tool_tile_position(self: Self) struct { x: i32, y: i32 } {
     if (self.heldup == 0) {
         xoffset += if (self.flipme) @as(i32, -32) else 28;
     }
-    const toolx: i32 = std.math.clamp((self.x + xoffset) >> TileRatio, 0, 19);
+    var toolx: i32 = (self.x + xoffset) >> TileRatio;
+    if (toolx < 0) {
+        toolx = 19;
+    } else if (toolx > 19) {
+        toolx = 0;
+    }
     const yoffset: i32 = 32 * @intCast(i32, self.heldup);
     const tooly: i32 = std.math.clamp((self.y + 12 - 32 + yoffset) >> TileRatio, 0, 18);
 
@@ -185,17 +190,24 @@ pub fn update(self: *Self, controls: Controller) void {
         }
     }
 
+    const quicky = (self.y - 20) >> TileRatio;
     if (controls.held.right) {
         self.x += 1;
+        if (self.x + (4 << SubRatio) > 20 << TileRatio and map.walkable(0, quicky)) {
+            self.x = 0;
+        }
         self.flipme = false;
         self.heldup = 0;
     } else if (controls.held.left) {
         self.x -= 1;
+        if (self.x < 0 and map.walkable(19, quicky)) {
+            self.x = 20 << TileRatio;
+        }
         self.flipme = true;
         self.heldup = 0;
     }
 
-    { // x simple collision detection
+    { // x simple collision detection //
         const y = std.math.clamp((self.y - 20) >> TileRatio, 0, 18);
         const xl = std.math.clamp(self.x >> TileRatio, 0, 19);
         const xr = std.math.clamp((self.x + 12) >> TileRatio, 0, 19);
@@ -214,7 +226,7 @@ pub fn update(self: *Self, controls: Controller) void {
         self.heldup = 1;
     }
 
-    { // y simple collision detection
+    { // y simple collision detection //
         const yt = std.math.clamp((self.y - 20) >> TileRatio, 0, 18);
         const yb = std.math.clamp((self.y - 12) >> TileRatio, 0, 18);
         const x = std.math.clamp((self.x + 6) >> TileRatio, 0, 19);
