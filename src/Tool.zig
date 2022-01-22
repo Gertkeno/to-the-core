@@ -267,16 +267,16 @@ const sfxTeleport = Sound{
     .mode = w4.TONE_NOISE,
 };
 var teleporterPos: ?usize = null;
-const teleportCost = 4;
+const teleportCost = 1;
 pub fn teleport(index: usize) bool {
-    if (bank.stockpile.mana < teleportCost)
+    if (bank.stockpile.amber < teleportCost)
         return false;
     _ = index;
 
     player.x = 82 << 2;
     player.y = 81 << 2;
     sfxTeleport.play();
-    bank.stockpile.mana -= teleportCost;
+    bank.stockpile.amber -= teleportCost;
     return true;
 }
 
@@ -289,6 +289,27 @@ pub const Belt = struct {
 };
 
 pub const array = [_]Belt{
+    .{
+        .icon = &icon_teleport,
+        .func = teleport,
+        .cost = teleportCost,
+        .currency = Bank.CurrencyType.Amber,
+        .name = "teleport",
+    },
+    .{
+        .icon = &icon_weavery,
+        .func = build_weavery,
+        .cost = weaveryCost,
+        .currency = Bank.CurrencyType.Mana,
+        .name = "weavery",
+    },
+    .{
+        .icon = &Caveart.Spring,
+        .func = build_siphon,
+        .cost = siphonCost,
+        .currency = Bank.CurrencyType.Housing,
+        .name = "spring",
+    },
     .{
         .icon = &icon_dig,
         .func = dig,
@@ -304,31 +325,10 @@ pub const array = [_]Belt{
         .name = "workshop",
     },
     .{
-        .icon = &Caveart.Spring,
-        .func = build_siphon,
-        .cost = siphonCost,
-        .currency = Bank.CurrencyType.Housing,
-        .name = "spring",
-    },
-    .{
-        .icon = &icon_weavery,
-        .func = build_weavery,
-        .cost = weaveryCost,
-        .currency = Bank.CurrencyType.Mana,
-        .name = "weavery",
-    },
-    .{
         .icon = &icon_drill,
         .func = build_drill,
         .cost = drillCost,
         .currency = Bank.CurrencyType.Housing,
         .name = "drill",
-    },
-    .{
-        .icon = &icon_teleport,
-        .func = teleport,
-        .cost = teleportCost,
-        .currency = Bank.CurrencyType.Mana,
-        .name = "teleport",
     },
 };

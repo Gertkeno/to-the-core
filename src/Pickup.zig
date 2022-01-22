@@ -40,8 +40,8 @@ pub fn draw(self: Self) void {
     const y = self.y;
 
     const sprite = switch (self.currency) {
-        .Mana => &gem,
-        .Amber => &brick,
+        .Mana => &Bank.artMana,
+        .Amber => &Bank.artAmber,
         .None, .Housing => unreachable,
     };
     const jump = jump_anim_offset(self.animationTime);
@@ -61,27 +61,3 @@ pub fn contact(self: Self, x: i32, y: i32) bool {
 pub fn update(self: *Self) void {
     self.animationTime +%= 1;
 }
-
-//pub fn kill_to(self: *Self,
-const DrawStruct = struct {
-    width: i32,
-    height: i32,
-    flags: u32,
-    array: [*]const u8,
-};
-
-// _1brick
-const brick = DrawStruct{
-    .width = 4,
-    .height = 6,
-    .flags = 1,
-    .array = &[_]u8{ 0x02, 0x28, 0x68, 0x68, 0x6a, 0x96 },
-};
-
-// gem
-const gem = DrawStruct{
-    .width = 4,
-    .height = 6,
-    .flags = 1,
-    .array = &[_]u8{ 0x34, 0x34, 0xed, 0xda, 0x38, 0x38 },
-};

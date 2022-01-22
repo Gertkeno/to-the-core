@@ -23,7 +23,7 @@ const ticky = Sound{
 extern const bank: Bank;
 
 const Self = @This();
-index: usize = 0,
+index: usize = 3,
 
 pub fn selecting(self: *Self, char: *Character, controls: Controller) bool {
     if (self.index > 0 and controls.released.up) {

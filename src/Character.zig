@@ -116,7 +116,13 @@ fn draw_tool(self: Self) void {
     w4.blit(&crosshair, tool.x * 8, (tool.y + 1) * 8, 8, 8, flags);
 
     // stockpile check //
-    w4.DRAW_COLORS.* = 0x21;
+    w4.DRAW_COLORS.* = switch (self.tool.?.currency) {
+        .Mana => 0x21,
+        .Amber => 0x31,
+        .Housing => 0x41,
+        .None => unreachable,
+    };
+
     const xflip = tool.x < 6 and tool.y > 11;
     const xflipoffset = if (xflip) @as(i32, 152) else 0;
     w4.blit(self.tool.?.icon, xflipoffset, 152, 8, 8, w4.BLIT_1BPP);

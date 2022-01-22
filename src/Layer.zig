@@ -317,7 +317,7 @@ pub fn update(self: *Self) void {
 
     // always spawn a crystal in the center for saftey
     if (self.frameCount % siphonInterval == 0 and self.tiles[190] == .empty) {
-        self.add_pickup(190, .Mana);
+        self.add_pickup(random_adjacent_tile(190), .Mana);
     }
 
     for (self.tiles) |tile, n| {
@@ -355,6 +355,7 @@ const sfxPickup = Sound{
     },
 };
 const Bank = @import("Bank.zig");
+extern const bank: Bank;
 pub fn check_pickups(self: *Self, charx: i32, chary: i32) ?Bank.CurrencyType {
     for (self.pickups[0..self.active]) |pickup, n| {
         if (pickup.contact(charx, chary)) {
@@ -364,6 +365,10 @@ pub fn check_pickups(self: *Self, charx: i32, chary: i32) ?Bank.CurrencyType {
             std.mem.swap(Pickup, &self.pickups[self.active], &self.pickups[n]);
             return c;
         }
+    }
+
+    if (bank.stockpile.drill >= 160 << Bank.DrillShift and chary > 153) {
+        return .None;
     }
 
     return null;

@@ -32,20 +32,25 @@ export fn start() void {
     LayerProgress.init();
 }
 
+const sfxNextLayer = Sound{
+    .freq = .{
+        .start = 800,
+        .end = 100,
+    },
+    .adsr = .{
+        .attack = 10,
+        .decay = 10,
+        .sustain = 30,
+        .release = 10,
+    },
+
+    .volume = 80,
+    .mode = w4.TONE_NOISE,
+    .channel = w4.TONE_MODE2,
+};
+
 export fn update() void {
     LayerProgress.draw(bank.stockpile.drill >> Bank.DrillShift);
-
-    if (bank.stockpile.drill >> Bank.DrillShift < 161) {
-        bank.stockpile.drill += bank.drillgen;
-    } else {
-        bank.stockpile.drill = 0;
-        bank.drillgen = 0;
-        LayerProgress.increment();
-        LayerProgress.draw(0);
-
-        player = Character{};
-        map.init_cave(LayerProgress.get_current(), rng);
-    }
 
     controls.update(w4.GAMEPAD1.*);
     map.draw_full();
@@ -54,6 +59,22 @@ export fn update() void {
     player.update(controls);
 
     map.draw_pickups();
+
+    if (bank.stockpile.drill >> Bank.DrillShift < 161) {
+        bank.stockpile.drill += bank.drillgen;
+    } else {
+        for (w4.FRAMEBUFFER[6280..6400]) |*byte, n| {
+            const x = n % 40;
+            byte.* = switch (n / 40 + ((x + map.frameCount / 16) & 1) % 4) { // finish line effect
+                3 => 0xFF,
+                2 => 0b10101010,
+                1 => 0b01010101,
+                0 => 0,
+                else => unreachable,
+            };
+        }
+    }
+
     player.draw();
 
     if (map.check_pickups(player.x >> 2, player.y >> 2)) |currency| {
@@ -64,7 +85,18 @@ export fn update() void {
             .Amber => {
                 bank.stockpile.amber += 1;
             },
-            .None, .Housing => unreachable,
+            .Housing => unreachable,
+
+            .None => { // using this enum as a layer end collision check
+                sfxNextLayer.play();
+                bank.stockpile.drill = 0;
+                bank.drillgen = 0;
+                LayerProgress.increment();
+                LayerProgress.draw(0);
+
+                player = Character{};
+                map.init_cave(LayerProgress.get_current(), rng);
+            },
         }
     }
 }
