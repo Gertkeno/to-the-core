@@ -15,7 +15,7 @@ stockpile: Currency = .{
     .mana = 8,
     .amber = 2,
 },
-drillgen: u32 = 0,
+drillgen: u32 = 990,
 
 const DrawStruct = struct {
     width: i32,

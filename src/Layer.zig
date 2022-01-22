@@ -103,7 +103,7 @@ fn draw_tile(self: Self, index: usize) void {
             Cave.blitempty(self.get_surrounding_tile(index, is_empty), x, y);
         },
         .housing => {
-            w4.DRAW_COLORS.* = 0x1231;
+            w4.DRAW_COLORS.* = 0x1234;
             w4.blit(&Build.Lair, x, y, 8, 8, 1);
         },
         .weavery => {

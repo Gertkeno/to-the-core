@@ -82,10 +82,10 @@ pub fn draw(progress: u32) void {
         animation += 1;
 
         var posx: i32 = 0;
-        const y: u8 = (animation / 16) % 4;
+        const y: u8 = (animation / 16) % 8;
         while (posx < 160) : (posx += 8) {
-            w4.blitSub(&ups, posx, 0, 8, y, 0, 8 - y, 8, ups_flags);
-            w4.blitSub(&ups, posx, y, 8, 8 - y, 0, 0, 8, ups_flags);
+            w4.blitSub(&ups, posx, 0, 8, 8 - y, 0, y, 8, ups_flags);
+            w4.blitSub(&ups, posx, 8 - y, 8, y, 0, 0, 8, ups_flags);
         }
     } else if (progress > 0) {
         rng.bytes(w4.FRAMEBUFFER[0..320]);

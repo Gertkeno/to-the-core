@@ -8,6 +8,7 @@ const Palette = @import("Palette.zig");
 const Layer = @import("Layer.zig");
 const LayerProgress = @import("LayerProgress.zig");
 const Character = @import("Character.zig");
+const Tutorial = @import("TutorialWorm.zig");
 const Bank = @import("Bank.zig");
 
 var controls = Controller{};
@@ -53,7 +54,11 @@ export fn update() void {
     LayerProgress.draw(bank.stockpile.drill >> Bank.DrillShift);
 
     controls.update(w4.GAMEPAD1.*);
+
     map.draw_full();
+    if (Tutorial.update_draw(&controls)) {
+        return;
+    }
 
     map.update();
     player.update(controls);
@@ -62,6 +67,8 @@ export fn update() void {
 
     if (bank.stockpile.drill >> Bank.DrillShift < 161) {
         bank.stockpile.drill += bank.drillgen;
+    } else {
+        Tutorial.progression_trigger(.progress_layer);
     }
 
     player.draw();
@@ -73,6 +80,7 @@ export fn update() void {
             },
             .Amber => {
                 bank.stockpile.amber += 1;
+                Tutorial.progression_trigger(.collect_amber);
             },
             .Housing => unreachable,
 

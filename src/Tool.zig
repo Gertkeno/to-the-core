@@ -3,6 +3,7 @@ const Layer = @import("Layer.zig");
 
 const Caveart = @import("Caveart.zig");
 
+const Tutorial = @import("TutorialWorm.zig");
 const Bank = @import("Bank.zig");
 const Sound = @import("Sound.zig");
 const w4 = @import("wasm4.zig");
@@ -152,6 +153,7 @@ pub fn build_housing(index: usize) bool {
     sfxHousingLow.play();
     tile.* = .housing;
     bank.stockpile.amber -= housingCost;
+    Tutorial.progression_trigger(.built_workshop);
     return true;
 }
 
@@ -181,6 +183,7 @@ pub fn build_siphon(index: usize) bool {
     tile.* = .siphon;
     bank.stockpile.housing -= 1;
     sfxSiphon.play();
+    Tutorial.progression_trigger(.built_spring);
     return true;
 }
 
@@ -207,6 +210,7 @@ pub fn build_weavery(index: usize) bool {
     tile.* = .weavery;
     sfxHousingHigh.play();
     bank.stockpile.mana -= weaveryCost;
+    Tutorial.progression_trigger(.built_weavery);
     return true;
 }
 
@@ -240,6 +244,7 @@ pub fn build_drill(index: usize) bool {
 
     tile.* = .drill;
     bank.stockpile.housing -= drillCost;
+    Tutorial.progression_trigger(.built_drill);
     return true;
 }
 
