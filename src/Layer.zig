@@ -353,6 +353,7 @@ const sfxPickup = Sound{
     .freq = .{
         .start = 900,
     },
+    .channel = w4.TONE_MODE3,
 };
 const Bank = @import("Bank.zig");
 extern const bank: Bank;

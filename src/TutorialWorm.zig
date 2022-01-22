@@ -32,6 +32,11 @@ pub fn progression_trigger(newprogress: Progression) void {
     }
 }
 
+pub fn disable() void {
+    currentProgress = .progress_layer;
+    mline = null;
+}
+
 var mline: ?usize = 0;
 var lineAnimation: u16 = 0;
 

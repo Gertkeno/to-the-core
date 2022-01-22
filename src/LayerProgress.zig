@@ -54,10 +54,6 @@ fn set_layername(newlayer: u8) void {
     }
 }
 
-pub fn init() void {
-    set_layername(0);
-}
-
 pub fn increment() void {
     if (currentlayer < 255) {
         set_layer(currentlayer + 1);

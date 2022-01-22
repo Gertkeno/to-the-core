@@ -3,14 +3,16 @@ const std = @import("std");
 
 const Controller = @import("Controller.zig");
 const Sound = @import("Sound.zig");
-const Palette = @import("Palette.zig");
 
 const Layer = @import("Layer.zig");
-const LayerProgress = @import("LayerProgress.zig");
-const SaveData = @import("SaveData.zig");
 const Character = @import("Character.zig");
-const Tutorial = @import("TutorialWorm.zig");
+const LayerProgress = @import("LayerProgress.zig");
+const Palette = @import("Palette.zig");
 const Bank = @import("Bank.zig");
+
+const Tutorial = @import("TutorialWorm.zig");
+const MainMenu = @import("MainMenu.zig");
+const SaveData = @import("SaveData.zig");
 
 var controls = Controller{};
 
@@ -21,6 +23,7 @@ export var player = Character{};
 // 82715
 var randombacker = std.rand.DefaultPrng.init(82724);
 export var rng: std.rand.Random = undefined;
+var mainMenu: ?MainMenu = MainMenu{};
 
 export fn start() void {
     for (w4.PALETTE.*) |*palette, n| {
@@ -29,9 +32,6 @@ export fn start() void {
 
     rng = randombacker.random();
     w4.SYSTEM_FLAGS.* = w4.SYSTEM_PRESERVE_FRAMEBUFFER;
-
-    map.init_cave(0, rng);
-    LayerProgress.init();
 }
 
 const sfxNextLayer = Sound{
@@ -52,10 +52,31 @@ const sfxNextLayer = Sound{
 };
 
 export fn update() void {
-    LayerProgress.draw(bank.stockpile.drill >> Bank.DrillShift);
-
     controls.update(w4.GAMEPAD1.*);
 
+    if (mainMenu) |*mm| {
+        if (mm.update(controls)) |newstate| {
+            switch (newstate) {
+                .@"New Game" => {
+                    bank = Bank{};
+                    LayerProgress.set_layer(0);
+                    map.init_cave(0, rng);
+                },
+                .@"Load Game" => {
+                    if (SaveData.read_save()) {
+                        Tutorial.disable();
+                    } else { // don't close the menu
+                        return;
+                    }
+                },
+            }
+
+            mainMenu = null;
+        }
+        return;
+    }
+
+    LayerProgress.draw(bank.stockpile.drill >> Bank.DrillShift);
     map.draw_full();
     if (Tutorial.update_draw(&controls)) {
         return;
@@ -87,6 +108,9 @@ export fn update() void {
 
             .None => { // using this enum as a layer end collision check
                 sfxNextLayer.play();
+                if (bank.stockpile.amber < 6)
+                    bank.stockpile.amber = 6;
+
                 bank.stockpile.drill = 0;
                 bank.drillgen = 0;
                 LayerProgress.increment();
