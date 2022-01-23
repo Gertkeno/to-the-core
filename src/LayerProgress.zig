@@ -32,7 +32,13 @@ extern const rng: std.rand.Random;
 fn set_layername(newlayer: u8) void {
     const nameindex = newlayer;
     std.mem.set(u8, w4.FRAMEBUFFER[0..320], 0);
-    if (nameindex >= names.len) {
+    if (newlayer == 255) {
+        layername = "kill screen";
+
+        for (w4.PALETTE.*) |*p| {
+            p.* = rng.int(u32);
+        }
+    } else if (nameindex >= names.len) {
         layername = "Winner!?";
 
         const npalette = palette[newlayer % 7];
@@ -58,6 +64,8 @@ fn set_layername(newlayer: u8) void {
 pub fn increment() void {
     if (currentlayer < 255) {
         set_layer(currentlayer + 1);
+    } else {
+        set_layer(255);
     }
 }
 

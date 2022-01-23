@@ -118,6 +118,9 @@ export fn update() void {
 
                 player = Character{};
                 map.init_cave(LayerProgress.get_current(), rng);
+                if (LayerProgress.get_current() == 6) {
+                    Tutorial.progression_trigger(.progress_core);
+                }
             },
         }
 

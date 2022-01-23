@@ -310,8 +310,8 @@ pub fn add_pickup(self: *Self, index: usize, currency: Bank.CurrencyType) void {
     }
 }
 
-const weaveryInterval = 2000;
-const siphonInterval = 600;
+const weaveryInterval = 2193;
+const siphonInterval = 837;
 pub fn update(self: *Self) void {
     self.frameCount +%= 1;
 

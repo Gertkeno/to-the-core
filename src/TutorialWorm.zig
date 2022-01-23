@@ -10,6 +10,7 @@ pub const Progression = enum {
     built_weavery,
     built_drill,
     progress_layer,
+    progress_core,
 };
 
 const progressionData: []const []const u8 = &.{
@@ -20,6 +21,7 @@ const progressionData: []const []const u8 = &.{
     @embedFile("tutorial/built_weavery.txt"),
     @embedFile("tutorial/built_drill.txt"),
     @embedFile("tutorial/progress_layer.txt"),
+    @embedFile("tutorial/progress_core.txt"),
 };
 
 var currentProgress: Progression = .welcome;
