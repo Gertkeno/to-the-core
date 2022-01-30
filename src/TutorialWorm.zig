@@ -25,21 +25,31 @@ const progressionData: []const []const u8 = &.{
 };
 
 var currentProgress: Progression = .welcome;
+
 pub fn progression_trigger(newprogress: Progression) void {
     const asi = @enumToInt(newprogress);
     if (@enumToInt(currentProgress) < asi) {
         currentProgress = newprogress;
         lineAnimation = 0;
         mline = 0;
+        mreadingLine = progressionData[asi];
     }
+}
+
+pub fn force_read(line: []const u8) void {
+    lineAnimation = 0;
+    mline = 0;
+    mreadingLine = line;
 }
 
 pub fn disable() void {
     currentProgress = .progress_layer;
+    mreadingLine = null;
     mline = null;
 }
 
 var mline: ?usize = 0;
+var mreadingLine: ?[]const u8 = progressionData[0];
 var lineAnimation: u16 = 0;
 
 fn jump(input: u16) u16 {
@@ -51,16 +61,18 @@ fn jump(input: u16) u16 {
 }
 
 pub fn update_draw(controls: *Controller) bool {
-    if (mline == null) {
+    if (mline == null or mreadingLine == null) {
         return false;
     }
+
     lineAnimation += 1;
 
+    // validated optionals
     const line = mline.?;
-    const asi = @enumToInt(currentProgress);
+    const readingLine = mreadingLine.?;
 
-    const mend = find(u8, progressionData[asi], line + 1, '\n');
-    const string = progressionData[asi][line .. mend orelse progressionData[asi].len];
+    const mend = find(u8, readingLine, line + 1, '\n');
+    const string = readingLine[line .. mend orelse readingLine.len];
 
     w4.DRAW_COLORS.* = 0x4230;
     w4.blit(&freddy, 100, 82, freddy_width, freddy_height, freddy_flags);
@@ -77,8 +89,9 @@ pub fn update_draw(controls: *Controller) bool {
     if (controls.released.x or controls.released.y) {
         lineAnimation = 0;
         if (mend) |end| {
-            if (end == progressionData[asi].len - 1) { // \n eof
+            if (end == readingLine.len - 1) { // \n eof
                 mline = null;
+                mreadingLine = null;
                 controls.released.y = false; // eat continue inputs
                 controls.released.x = false;
                 return false;
@@ -87,6 +100,7 @@ pub fn update_draw(controls: *Controller) bool {
             return true;
         } else { // no \n eof
             mline = null;
+            mreadingLine = null;
             controls.released.y = false;
             controls.released.x = false;
             return false;

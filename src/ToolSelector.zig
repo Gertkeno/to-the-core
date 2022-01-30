@@ -1,10 +1,20 @@
+const w4 = @import("wasm4.zig");
+
 const Character = @import("Character.zig");
 const Controller = @import("Controller.zig");
 const Sound = @import("Sound.zig");
 const Bank = @import("Bank.zig");
 const Tool = @import("Tool.zig");
+const Tutorial = @import("TutorialWorm.zig");
 
-const w4 = @import("wasm4.zig");
+const tooltips: []const []const u8 = &.{
+    @embedFile("tooltip/teleport.txt"),
+    @embedFile("tooltip/weavery.txt"),
+    @embedFile("tooltip/spring.txt"),
+    @embedFile("tooltip/dig.txt"),
+    @embedFile("tooltip/workshop.txt"),
+    @embedFile("tooltip/drill.txt"),
+};
 
 const ticky = Sound{
     .freq = .{
@@ -42,9 +52,12 @@ pub fn selecting(self: *Self, char: *Character, controls: Controller) bool {
         }
         ticky.play();
         return true;
-    } else {
-        return false;
+    } else if (controls.released.y and self.index < tooltips.len) {
+        // display tutorial
+        Tutorial.force_read(tooltips[self.index]);
     }
+
+    return false;
 }
 
 const startAtY = 152 - Tool.array.len * 8;
