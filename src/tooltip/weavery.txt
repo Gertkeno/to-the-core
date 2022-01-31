@@ -1,1 +1,2 @@
-Upgrade a workshop,\this produces gems!
+Upgrades a workshop,\this produces gems!
+Make sure to space\out your workshops!
