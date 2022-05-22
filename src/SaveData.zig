@@ -9,11 +9,16 @@ extern var map: Layer;
 
 var savebuffer: [6 + 140]u32 = undefined;
 const saveSize = @sizeOf(@TypeOf(savebuffer));
+comptime {
+    if (saveSize > 1024) {
+        @compileError("save buffer too large!");
+    }
+}
 
 pub fn write_save() void {
-    savebuffer[0] = bank.stockpile.mana;
-    savebuffer[1] = bank.stockpile.amber;
-    savebuffer[2] = bank.stockpile.housing;
+    savebuffer[0] = bank.stockpile.crystal;
+    savebuffer[1] = bank.stockpile.gem;
+    savebuffer[2] = bank.stockpile.worker;
     savebuffer[3] = bank.stockpile.drill;
     savebuffer[4] = bank.drillgen;
     savebuffer[5] = LayerProgress.get_current();
@@ -36,9 +41,9 @@ pub fn read_save() bool {
         return false;
     }
 
-    bank.stockpile.mana = savebuffer[0];
-    bank.stockpile.amber = savebuffer[1];
-    bank.stockpile.housing = savebuffer[2];
+    bank.stockpile.crystal = savebuffer[0];
+    bank.stockpile.gem = savebuffer[1];
+    bank.stockpile.worker = savebuffer[2];
     bank.stockpile.drill = savebuffer[3];
     bank.drillgen = savebuffer[4];
     LayerProgress.set_layer(@truncate(u8, savebuffer[5]));

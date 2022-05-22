@@ -169,7 +169,7 @@ pub fn blitempty(face: Faces, x: i32, y: i32) void {
     w4.blit(std.asBytes(&buffer), x, y, 8, 8, w4.BLIT_1BPP);
 }
 
-pub const Spring = [8]u8{
+pub const diamonds = [8]u8{
     0b00000000,
     0b01110100,
     0b00101110,
@@ -180,7 +180,7 @@ pub const Spring = [8]u8{
     0b00000000,
 };
 
-pub const Deposit = [8]u8{
+pub const gems = [8]u8{
     0b00000000,
     0b00000010,
     0b00000100,

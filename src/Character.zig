@@ -117,9 +117,9 @@ fn draw_tool(self: Self) void {
 
     // stockpile check //
     w4.DRAW_COLORS.* = switch (self.tool.?.currency) {
-        .Mana => 0x21,
-        .Amber => 0x31,
-        .Housing => 0x41,
+        .Crystal => 0x21,
+        .Gem => 0x31,
+        .Worker => 0x41,
         .None => unreachable,
     };
 
@@ -128,9 +128,9 @@ fn draw_tool(self: Self) void {
     w4.blit(self.tool.?.icon, xflipoffset, 152, 8, 8, w4.BLIT_1BPP);
     if (self.tool.?.currency != .None) {
         const instock = switch (self.tool.?.currency) {
-            .Mana => bank.stockpile.mana,
-            .Amber => bank.stockpile.amber,
-            .Housing => bank.stockpile.housing,
+            .Crystal => bank.stockpile.crystal,
+            .Gem => bank.stockpile.gem,
+            .Worker => bank.stockpile.worker,
             .None => unreachable,
         };
 

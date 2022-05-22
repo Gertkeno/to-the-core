@@ -97,19 +97,19 @@ export fn update() void {
 
     if (map.check_pickups(player.x >> 2, player.y >> 2)) |currency| {
         switch (currency) {
-            .Mana => {
-                bank.stockpile.mana += 1;
+            .Crystal => {
+                bank.stockpile.crystal += 1;
             },
-            .Amber => {
-                bank.stockpile.amber += 1;
-                Tutorial.progression_trigger(.collect_amber);
+            .Gem => {
+                bank.stockpile.gem += 1;
+                Tutorial.progression_trigger(.collect_gem);
             },
-            .Housing => unreachable,
+            .Worker => unreachable,
 
             .None => { // using this enum as a layer end collision check
                 sfxNextLayer.play();
-                if (bank.stockpile.amber < 6)
-                    bank.stockpile.amber = 6;
+                if (bank.stockpile.gem < 6)
+                    bank.stockpile.gem = 6;
 
                 bank.stockpile.drill = 0;
                 bank.drillgen = 0;

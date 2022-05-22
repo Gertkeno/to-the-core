@@ -4,7 +4,7 @@ const Controller = @import("Controller.zig");
 
 pub const Progression = enum {
     welcome,
-    collect_amber,
+    collect_gem,
     built_workshop,
     built_spring,
     built_weavery,
@@ -15,7 +15,7 @@ pub const Progression = enum {
 
 const progressionData: []const []const u8 = &.{
     @embedFile("tutorial/welcome.txt"),
-    @embedFile("tutorial/collect_amber.txt"),
+    @embedFile("tutorial/collect_gem.txt"),
     @embedFile("tutorial/built_workshop.txt"),
     @embedFile("tutorial/built_spring.txt"),
     @embedFile("tutorial/built_weavery.txt"),

@@ -3,17 +3,17 @@ const std = @import("std");
 
 pub const DrillShift = 9;
 
-pub const CurrencyType = enum { Mana, Amber, Housing, None };
+pub const CurrencyType = enum { Crystal, Gem, Worker, None };
 pub const Currency = struct {
-    mana: u32 = 0,
-    amber: u32 = 0,
-    housing: u32 = 0,
+    crystal: u32 = 0,
+    gem: u32 = 0,
+    worker: u32 = 0,
     drill: u32 = 0,
 };
 
 stockpile: Currency = .{
-    .mana = 8,
-    .amber = 2,
+    .crystal = 8,
+    .gem = 2,
 },
 drillgen: u32 = 0,
 
@@ -24,14 +24,14 @@ const DrawStruct = struct {
     array: [*]const u8,
 };
 
-pub const artAmber = DrawStruct{
+pub const artGem = DrawStruct{
     .width = 4,
     .height = 6,
     .flags = 1,
     .array = &[_]u8{ 0x02, 0x28, 0x68, 0x68, 0x6a, 0x96 },
 };
 
-pub const artMana = DrawStruct{
+pub const artCrystal = DrawStruct{
     .width = 4,
     .height = 6,
     .flags = 1,

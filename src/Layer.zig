@@ -14,11 +14,11 @@ pub const Tiles = enum(u8) {
     // cave //
     empty,
     stone,
-    spring,
-    deposit,
+    diamonds,
+    gems,
     // built //
-    siphon,
-    housing,
+    spring,
+    workshop,
     weavery,
     drill,
 };
@@ -33,11 +33,11 @@ active: usize = 0,
 fn is_raised(tile: Tiles) bool {
     return switch (tile) {
         .stone,
+        .diamonds,
+        .gems,
         .spring,
-        .deposit,
-        .siphon,
         => true,
-        .empty, .drill, .housing, .weavery => false,
+        .empty, .drill, .workshop, .weavery => false,
     };
 }
 
@@ -93,7 +93,7 @@ fn draw_tile(self: Self, index: usize) void {
     const x: i32 = @intCast(i32, index % 20 * 8);
     const y: i32 = @intCast(i32, index / 20 * 8) + 8;
     switch (tile) {
-        .stone, .spring, .deposit, .siphon => {
+        .stone, .diamonds, .gems, .spring => {
             w4.DRAW_COLORS.* = 0x43;
             const stones = self.get_surrounding_tile(index, is_raised);
             Cave.blitstone(stones, x, y);
@@ -102,34 +102,34 @@ fn draw_tile(self: Self, index: usize) void {
             w4.DRAW_COLORS.* = 0x21;
             Cave.blitempty(self.get_surrounding_tile(index, is_empty), x, y);
         },
-        .housing => {
+        .workshop => {
             w4.DRAW_COLORS.* = 0x1234;
-            w4.blit(&Build.Lair, x, y, 8, 8, 1);
+            w4.blit(&Build.workshop, x, y, 8, 8, 1);
         },
         .weavery => {
             w4.DRAW_COLORS.* = 0x1234;
-            w4.blit(&Build.Weavery, x, y, 8, 8, 1);
+            w4.blit(&Build.weavery, x, y, 8, 8, 1);
         },
         .drill => {
             w4.DRAW_COLORS.* = 0x1234;
-            w4.blit(&Build.Drill, x, y, 8, 8, 1);
+            w4.blit(&Build.drill, x, y, 8, 8, 1);
         },
     }
 
     // extra cave draws
     switch (tile) {
-        .spring => {
+        .diamonds => {
             w4.DRAW_COLORS.* = 0x10;
-            w4.blit(&Cave.Spring, x, y, 8, 8, 0);
+            w4.blit(&Cave.diamonds, x, y, 8, 8, 0);
         },
-        .deposit => {
+        .gems => {
             w4.DRAW_COLORS.* = 0x20;
             const flippy = (index % 31) & 0b1110;
-            w4.blit(&Cave.Deposit, x, y, 8, 8, flippy);
+            w4.blit(&Cave.gems, x, y, 8, 8, flippy);
         },
-        .siphon => {
+        .spring => {
             w4.DRAW_COLORS.* = 0x20;
-            w4.blit(&Build.Siphon, x, y, 8, 8, 0);
+            w4.blit(&Build.spring, x, y, 8, 8, 0);
         },
         else => {},
     }
@@ -226,10 +226,10 @@ pub fn init_cave(self: *Self, layer: i32, myrng: std.rand.Random) void {
         tile.* = if (caveOldBuffer[n]) .stone else .empty;
     }
 
-    var springs = std.math.max(5 - (layer >> 1), 1);
-    while (springs > 0) : (springs -= 1) {
+    var diamonds = std.math.max(5 - (layer >> 1), 1);
+    while (diamonds > 0) : (diamonds -= 1) {
         const index = myrng.uintAtMost(u32, 379);
-        self.tiles[index] = .spring;
+        self.tiles[index] = .diamonds;
     }
 
     const startsquare = [_]usize{ 189, 190, 170, 210 };
@@ -247,7 +247,7 @@ pub fn init_cave(self: *Self, layer: i32, myrng: std.rand.Random) void {
 
     for (self.tiles) |*tile, n| {
         if (!caveNewBuffer[n] and tile.* == .stone) {
-            tile.* = .deposit;
+            tile.* = .gems;
         }
     }
 }
@@ -311,27 +311,27 @@ pub fn add_pickup(self: *Self, index: usize, currency: Bank.CurrencyType) void {
 }
 
 const weaveryInterval = 2193;
-const siphonInterval = 837;
+const springInterval = 837;
 pub fn update(self: *Self) void {
     self.frameCount +%= 1;
 
     // always spawn a crystal in the center for saftey
-    if (self.frameCount % siphonInterval == 0 and self.tiles[190] == .empty) {
-        self.add_pickup(random_adjacent_tile(190), .Mana);
+    if (self.frameCount % springInterval == 0 and self.tiles[190] == .empty) {
+        self.add_pickup(random_adjacent_tile(190), .Crystal);
     }
 
     for (self.tiles) |tile, n| {
         switch (tile) {
-            .siphon => {
-                if ((n + self.frameCount) % siphonInterval != 0)
+            .spring => {
+                if ((n + self.frameCount) % springInterval != 0)
                     continue;
 
-                self.add_pickup(random_adjacent_tile(n), .Mana);
+                self.add_pickup(random_adjacent_tile(n), .Crystal);
             },
             .weavery => {
                 if ((n * n + self.frameCount) % weaveryInterval != 0)
                     continue;
-                self.add_pickup(random_adjacent_tile(n), .Amber);
+                self.add_pickup(random_adjacent_tile(n), .Gem);
             },
             else => {},
         }

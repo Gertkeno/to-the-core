@@ -21,9 +21,9 @@ fn direct_neighbors(index: usize, tile: Layer.Tiles) u2 {
             continue;
 
         const neighbor = map.tiles[@intCast(usize, sindex + diff)];
-        if (tile == .stone and (neighbor == .spring or neighbor == .deposit)) {
+        if (tile == .stone and (neighbor == .diamonds or neighbor == .gems or neighbor == .spring)) {
             count += 1;
-        } else if (tile == .housing and neighbor == .weavery) {
+        } else if (tile == .workshop and neighbor == .weavery) {
             count += 1;
         } else if (neighbor == tile) {
             count += 1;
@@ -46,15 +46,15 @@ const icon_sell = [8]u8{
 pub fn sell(index: usize) bool {
     const tile = &map.tiles[index];
     switch (tile.*) {
-        .housing => {
-            if (bank.stockpile.housing > 0) {
-                bank.stockpile.housing -= 1;
-                bank.stockpile.amber += housingCost << Bank.Ratio;
+        .workshop => {
+            if (bank.stockpile.worker > 0) {
+                bank.stockpile.worker -= 1;
+                bank.stockpile.gem += workshopCost << Bank.Ratio;
             } else {
                 return false;
             }
         },
-        .siphon => {
+        .spring => {
             //bank.stockpile.mana += 1 << Bank.Ratio;
         },
         .empty,
@@ -87,23 +87,23 @@ const icon_dig = [8]u8{
 };
 
 pub fn dig(index: usize) bool {
-    if (bank.stockpile.mana < 1)
+    if (bank.stockpile.crystal < 1)
         return false;
 
     const tile = &map.tiles[index];
-    if (tile.* != .stone and tile.* != .deposit)
+    if (tile.* != .stone and tile.* != .gems)
         return false;
 
-    bank.stockpile.mana -= 1;
-    if (tile.* == .deposit)
-        map.add_pickup(index, .Amber);
+    bank.stockpile.crystal -= 1;
+    if (tile.* == .gems)
+        map.add_pickup(index, .Gem);
 
     brickBreak.play();
     tile.* = .empty;
     return true;
 }
 
-const sfxHousingLow = Sound{
+const sfxWorkshopLow = Sound{
     .freq = .{
         .start = 300,
     },
@@ -114,7 +114,7 @@ const sfxHousingLow = Sound{
     .mode = w4.TONE_NOISE,
 };
 
-const sfxHousingHigh = Sound{
+const sfxWorkshopHigh = Sound{
     .freq = .{
         .start = 500,
     },
@@ -137,27 +137,27 @@ const icon_house = [8]u8{
     0b00000000,
 };
 
-const housingCost = 4; // amber
-pub fn build_housing(index: usize) bool {
-    if (bank.stockpile.amber < housingCost)
+const workshopCost = 4; // gem
+pub fn build_workshop(index: usize) bool {
+    if (bank.stockpile.gem < workshopCost)
         return false;
 
     const tile = &map.tiles[index];
     if (tile.* != .empty)
         return false;
 
-    if (direct_neighbors(index, .housing) >= 1)
+    if (direct_neighbors(index, .workshop) >= 1)
         return false;
 
-    bank.stockpile.housing += 2;
-    sfxHousingLow.play();
-    tile.* = .housing;
-    bank.stockpile.amber -= housingCost;
+    bank.stockpile.worker += 2;
+    sfxWorkshopLow.play();
+    tile.* = .workshop;
+    bank.stockpile.gem -= workshopCost;
     Tutorial.progression_trigger(.built_workshop);
     return true;
 }
 
-const sfxSiphon = Sound{
+const sfxSpring = Sound{
     .freq = .{
         .start = 900,
         .end = 1400,
@@ -171,18 +171,18 @@ const sfxSiphon = Sound{
     .channel = w4.TONE_MODE2,
 };
 
-const siphonCost = 1; // housing
-pub fn build_siphon(index: usize) bool {
-    if (bank.stockpile.housing < siphonCost)
+const springCost = 1; // worker
+pub fn build_spring(index: usize) bool {
+    if (bank.stockpile.worker < springCost)
         return false;
 
     const tile = &map.tiles[index];
-    if (tile.* != .spring)
+    if (tile.* != .diamonds)
         return false;
 
-    tile.* = .siphon;
-    bank.stockpile.housing -= 1;
-    sfxSiphon.play();
+    tile.* = .spring;
+    bank.stockpile.worker -= 1;
+    sfxSpring.play();
     Tutorial.progression_trigger(.built_spring);
     return true;
 }
@@ -198,18 +198,18 @@ const icon_weavery = [8]u8{
     0b00000000,
 };
 
-const weaveryCost = 10; // mana
+const weaveryCost = 10; // Crystal
 pub fn build_weavery(index: usize) bool {
-    if (bank.stockpile.mana < weaveryCost)
+    if (bank.stockpile.crystal < weaveryCost)
         return false;
 
     const tile = &map.tiles[index];
-    if (tile.* != .housing)
+    if (tile.* != .workshop)
         return false;
 
     tile.* = .weavery;
-    sfxHousingHigh.play();
-    bank.stockpile.mana -= weaveryCost;
+    sfxWorkshopHigh.play();
+    bank.stockpile.crystal -= weaveryCost;
     Tutorial.progression_trigger(.built_weavery);
     return true;
 }
@@ -227,7 +227,7 @@ const icon_drill = [8]u8{
 
 const drillCost = 4;
 pub fn build_drill(index: usize) bool {
-    if (bank.stockpile.housing < drillCost)
+    if (bank.stockpile.worker < drillCost)
         return false;
 
     const tile = &map.tiles[index];
@@ -236,14 +236,14 @@ pub fn build_drill(index: usize) bool {
 
     if (direct_neighbors(index, .stone) >= 3) {
         bank.drillgen += 2;
-        sfxHousingHigh.play();
+        sfxWorkshopHigh.play();
     } else {
         bank.drillgen += 1;
-        sfxHousingLow.play();
+        sfxWorkshopLow.play();
     }
 
     tile.* = .drill;
-    bank.stockpile.housing -= drillCost;
+    bank.stockpile.worker -= drillCost;
     Tutorial.progression_trigger(.built_drill);
     return true;
 }
@@ -274,14 +274,14 @@ const sfxTeleport = Sound{
 var teleporterPos: ?usize = null;
 const teleportCost = 1;
 pub fn teleport(index: usize) bool {
-    if (bank.stockpile.amber < teleportCost)
+    if (bank.stockpile.gem < teleportCost)
         return false;
     _ = index;
 
     player.x = 82 << 2;
     player.y = 81 << 2;
     sfxTeleport.play();
-    bank.stockpile.amber -= teleportCost;
+    bank.stockpile.gem -= teleportCost;
     return true;
 }
 
@@ -298,42 +298,42 @@ pub const array = [_]Belt{
         .icon = &icon_teleport,
         .func = teleport,
         .cost = teleportCost,
-        .currency = Bank.CurrencyType.Amber,
+        .currency = Bank.CurrencyType.Gem,
         .name = "teleport",
     },
     .{
         .icon = &icon_weavery,
         .func = build_weavery,
         .cost = weaveryCost,
-        .currency = Bank.CurrencyType.Mana,
+        .currency = Bank.CurrencyType.Crystal,
         .name = "weavery",
     },
     .{
-        .icon = &Caveart.Spring,
-        .func = build_siphon,
-        .cost = siphonCost,
-        .currency = Bank.CurrencyType.Housing,
+        .icon = &Caveart.diamonds,
+        .func = build_spring,
+        .cost = springCost,
+        .currency = Bank.CurrencyType.Worker,
         .name = "spring",
     },
     .{
         .icon = &icon_dig,
         .func = dig,
         .cost = 1,
-        .currency = Bank.CurrencyType.Mana,
+        .currency = Bank.CurrencyType.Crystal,
         .name = "dig",
     },
     .{
         .icon = &icon_house,
-        .func = build_housing,
-        .cost = housingCost,
-        .currency = Bank.CurrencyType.Amber,
+        .func = build_workshop,
+        .cost = workshopCost,
+        .currency = Bank.CurrencyType.Gem,
         .name = "workshop",
     },
     .{
         .icon = &icon_drill,
         .func = build_drill,
         .cost = drillCost,
-        .currency = Bank.CurrencyType.Housing,
+        .currency = Bank.CurrencyType.Worker,
         .name = "drill",
     },
 };

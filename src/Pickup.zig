@@ -40,9 +40,9 @@ pub fn draw(self: Self) void {
     const y = self.y;
 
     const sprite = switch (self.currency) {
-        .Mana => &Bank.artMana,
-        .Amber => &Bank.artAmber,
-        .None, .Housing => unreachable,
+        .Crystal => &Bank.artCrystal,
+        .Gem => &Bank.artGem,
+        .None, .Worker => unreachable,
     };
     const jump = jump_anim_offset(self.animationTime);
     w4.blit(sprite.array, x, y + jump, sprite.width, sprite.height, sprite.flags);
