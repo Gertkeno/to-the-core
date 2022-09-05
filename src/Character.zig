@@ -39,42 +39,43 @@ const Self = @This();
 
 x: i32 = 82 << SubRatio,
 y: i32 = 81 << SubRatio,
+
+color: u16,
 walkanimation: u8 = 4,
 toolanimation: u8 = 0,
-toolerror: ?u8 = null,
 flipme: bool = false,
+
+toolerror: ?u8 = null,
 heldup: i2 = 0,
 
 toolSelecting: ?ToolSelector = null,
 tool: ?Belt = null,
 
-var toolTextBuffer: [7]u8 = undefined;
-
-fn tool_tip_stringify(mstock: u32, mcost: u32) []const u8 {
+fn tool_tip_stringify(mstock: u32, mcost: u32, buffer: []u8) []const u8 {
     var cost = mcost;
     var index: usize = 6;
     while (cost > 0) {
-        toolTextBuffer[index] = '0' + @intCast(u8, cost % 10);
+        buffer[index] = '0' + @intCast(u8, cost % 10);
         index -= 1;
         cost /= 10;
     }
 
-    toolTextBuffer[index] = '/';
+    buffer[index] = '/';
     index -= 1;
 
     if (mstock == 0) {
-        toolTextBuffer[index] = '0';
+        buffer[index] = '0';
         index -= 1;
     } else {
         var stock = mstock;
         while (stock > 0) {
-            toolTextBuffer[index] = '0' + @intCast(u8, stock % 10);
+            buffer[index] = '0' + @intCast(u8, stock % 10);
             index -= 1;
             stock /= 10;
         }
     }
 
-    const output = toolTextBuffer[index + 1 ..];
+    const output = buffer[index + 1 ..];
     return output;
 }
 
@@ -115,46 +116,47 @@ fn draw_tool(self: Self) void {
     }
     w4.blit(&crosshair, tool.x * 8, (tool.y + 1) * 8, 8, 8, flags);
 
+    //draw_stockpile(self.tool.?, 0);
+}
+
+pub fn draw_stockpile(tool: Belt, yoffset: i32) void {
     // stockpile check //
-    w4.DRAW_COLORS.* = switch (self.tool.?.currency) {
+    w4.DRAW_COLORS.* = switch (tool.currency) {
         .Crystal => 0x21,
         .Gem => 0x31,
         .Worker => 0x41,
         .None => unreachable,
     };
 
-    const xflip = tool.x < 6 and tool.y > 11;
-    const xflipoffset = if (xflip) @as(i32, 152) else 0;
-    w4.blit(self.tool.?.icon, xflipoffset, 152, 8, 8, w4.BLIT_1BPP);
-    if (self.tool.?.currency != .None) {
-        const instock = switch (self.tool.?.currency) {
-            .Crystal => bank.stockpile.crystal,
-            .Gem => bank.stockpile.gem,
-            .Worker => bank.stockpile.worker,
-            .None => unreachable,
-        };
+    const ypos = 152 - yoffset * 8;
+    w4.blit(tool.icon, 0, ypos, 8, 8, w4.BLIT_1BPP);
 
-        const tooltext = tool_tip_stringify(instock, self.tool.?.cost);
-
-        if (xflip) {
-            const offset = @intCast(i32, 152 - tooltext.len * 8);
-            w4.text(tooltext, offset, 152);
-        } else {
-            w4.text(tooltext, 8, 152);
-        }
+    if (tool.currency == .None) {
+        //previously only applicable to tool "sell"
+        return;
     }
+
+    const instock = switch (tool.currency) {
+        .Crystal => bank.stockpile.crystal,
+        .Gem => bank.stockpile.gem,
+        .Worker => bank.stockpile.worker,
+        .None => unreachable,
+    };
+
+    var toolTextBuffer: [7]u8 = undefined;
+    const tooltext = tool_tip_stringify(instock, tool.cost, toolTextBuffer[0..]);
+
+    w4.text(tooltext, 8, ypos);
 }
 
 pub fn draw(self: Self) void {
-    w4.DRAW_COLORS.* = 0x4023;
+    w4.DRAW_COLORS.* = self.color;
     const flags = w4.BLIT_2BPP | if (self.flipme) w4.BLIT_FLIP_X else 0;
 
     const frame = &frames[self.walkanimation / 4];
     w4.blit(frame, self.x >> SubRatio, self.y >> SubRatio, 4, 6, flags);
 
-    if (self.toolSelecting) |ts| {
-        ts.draw();
-    } else if (self.tool != null) {
+    if (self.tool != null) {
         self.draw_tool();
     }
 }
@@ -252,10 +254,10 @@ pub fn update(self: *Self, controls: Controller) void {
     }
 
     if (controls.released.x and self.tool != null) {
-        // use tool
+        // use too
         const tool = self.tool_tile_position();
         const tindex = @intCast(usize, tool.x + tool.y * 20);
-        if (!self.tool.?.func(tindex)) {
+        if (!self.tool.?.func(tindex, self)) {
             if (self.toolerror == null) {
                 self.toolerror = 0;
                 toolfail.play();
@@ -264,4 +266,15 @@ pub fn update(self: *Self, controls: Controller) void {
     } else if (controls.released.y) {
         self.toolSelecting = ToolSelector{};
     }
+}
+
+pub fn reset(self: *Self) void {
+    self.x = 82 << SubRatio;
+    self.y = 81 << SubRatio;
+    self.tool = null;
+    self.toolSelecting = null;
+}
+
+pub fn in_left_corner(self: Self) bool {
+    return (self.x >> TileRatio) < 5 and (self.y >> TileRatio) > 15;
 }

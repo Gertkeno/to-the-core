@@ -61,6 +61,7 @@ pub fn selecting(self: *Self, char: *Character, controls: Controller) bool {
 }
 
 const startAtY = 152 - Tool.array.len * 8;
+const startAtX = 160 - 9 * 8;
 pub fn draw(self: Self) void {
     for (Tool.array) |entry, n| {
         if (n == self.index) {
@@ -70,8 +71,9 @@ pub fn draw(self: Self) void {
         }
 
         const y = @intCast(i32, startAtY + n * 8);
-        w4.blit(entry.icon, 0, y, 8, 8, w4.BLIT_1BPP);
-        w4.text(entry.name, 8, y);
+        w4.blit(entry.icon, 160 - 8, y, 8, 8, w4.BLIT_1BPP);
+        const x = @intCast(i32, 160 - 8 - (entry.name.len * 8));
+        w4.text(entry.name, x, y);
     }
 
     if (Tool.array.len == self.index) {
@@ -79,5 +81,5 @@ pub fn draw(self: Self) void {
     } else {
         w4.DRAW_COLORS.* = 0x21;
     }
-    w4.text("none", 8, 152);
+    w4.text("none", 120, 152);
 }

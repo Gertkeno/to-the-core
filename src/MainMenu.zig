@@ -6,7 +6,6 @@ const Sound = @import("Sound.zig");
 
 const Self = @This();
 index: usize = 0,
-animate: u8 = 0,
 
 pub const Options = enum {
     @"New Game",
@@ -41,7 +40,6 @@ pub fn update(self: *Self, controls: Controller) ?Options {
     if (controls.released.x) {
         return @intToEnum(Options, self.index);
     }
-    self.animate += 1;
 
     w4.DRAW_COLORS.* = 0x1234;
     w4.blit(&mainmenu, 0, 0, mainmenu_width, mainmenu_height, mainmenu_flags);

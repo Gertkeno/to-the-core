@@ -14,11 +14,23 @@ const Tutorial = @import("TutorialWorm.zig");
 const MainMenu = @import("MainMenu.zig");
 const SaveData = @import("SaveData.zig");
 
-var controls = Controller{};
+const gamepads = [4]*const u8{
+    w4.GAMEPAD1,
+    w4.GAMEPAD2,
+    w4.GAMEPAD3,
+    w4.GAMEPAD4,
+};
+var controls = [4]Controller{ .{}, .{}, .{}, .{} };
 
 export var map = Layer{};
 export var bank = Bank{};
-export var player = Character{};
+var players = [4]Character{
+    .{ .color = 0x4023 },
+    .{ .color = 0x4032 },
+    .{ .color = 0x3024 },
+    .{ .color = 0x3042 },
+};
+var active_players: usize = 1;
 
 // 82715
 var randombacker = std.rand.DefaultPrng.init(82724);
@@ -52,15 +64,22 @@ const sfxNextLayer = Sound{
 };
 
 export fn update() void {
-    controls.update(w4.GAMEPAD1.*);
+    // poll all controller changes
+    for (controls) |*controller, n| {
+        if (gamepads[n].* > 0) {
+            active_players = std.math.max(active_players, n + 1);
+        }
+        controller.update(gamepads[n].*);
+    }
 
+    // main menu and early return
     if (mainMenu) |*mm| {
-        if (mm.update(controls)) |newstate| {
+        if (mm.update(controls[0])) |newstate| {
             switch (newstate) {
                 .@"New Game" => {
                     bank = Bank{};
                     LayerProgress.set_layer(0);
-                    map.init_cave(0, rng);
+                    map.init_cave(0);
                 },
                 .@"Load Game" => {
                     if (SaveData.read_save()) {
@@ -76,16 +95,20 @@ export fn update() void {
         return;
     }
 
+    // background draw map and title bar
     LayerProgress.draw(bank.stockpile.drill >> Bank.DrillShift);
     map.draw_full();
-    if (Tutorial.update_draw(&controls)) {
+
+    // single player only tutorial worm
+    if (active_players == 1 and Tutorial.update_draw(&controls[0])) {
         return;
     }
 
+    // most game logic updates
     map.update();
-    player.update(controls);
-
-    map.draw_pickups();
+    for (players[0..active_players]) |*player, n| {
+        player.update(controls[n]);
+    }
 
     if (bank.stockpile.drill >> Bank.DrillShift < 161) {
         bank.stockpile.drill += bank.drillgen;
@@ -93,37 +116,72 @@ export fn update() void {
         Tutorial.progression_trigger(.progress_layer);
     }
 
-    player.draw();
+    // draw gem and crystal pickups
+    map.draw_pickups();
 
-    if (map.check_pickups(player.x >> 2, player.y >> 2)) |currency| {
-        switch (currency) {
-            .Crystal => {
-                bank.stockpile.crystal += 1;
-            },
-            .Gem => {
-                bank.stockpile.gem += 1;
-                Tutorial.progression_trigger(.collect_gem);
-            },
-            .Worker => unreachable,
+    // draw player and tool ui
+    var drawingStockpile = for (players[0..active_players]) |player| {
+        if (player.in_left_corner()) {
+            break false;
+        }
+    } else true;
 
-            .None => { // using this enum as a layer end collision check
-                sfxNextLayer.play();
-                if (bank.stockpile.gem < 6)
-                    bank.stockpile.gem = 6;
-
-                bank.stockpile.drill = 0;
-                bank.drillgen = 0;
-                LayerProgress.increment();
-                LayerProgress.draw(0);
-
-                player = Character{};
-                map.init_cave(LayerProgress.get_current(), rng);
-                if (LayerProgress.get_current() == 6) {
-                    Tutorial.progression_trigger(.progress_core);
-                }
-            },
+    for (players[0..active_players]) |player, n| {
+        if (drawingStockpile) {
+            if (player.tool) |tool| {
+                Character.draw_stockpile(tool, @intCast(i32, n));
+            }
         }
 
-        SaveData.write_save();
+        player.draw();
+
+        if (w4.NETPLAY.* & 0b100 > 0) {
+            if (n == w4.NETPLAY.* & 0b011) {
+                if (player.toolSelecting) |ts| {
+                    ts.draw();
+                }
+            }
+        } else {
+            if (player.toolSelecting) |ts| {
+                ts.draw();
+            }
+        }
+    }
+
+    // check gem and crystal pick ups
+    for (players[0..active_players]) |player| {
+        if (map.check_pickups(player.x >> 2, player.y >> 2)) |currency| {
+            switch (currency) {
+                .Crystal => {
+                    bank.stockpile.crystal += 1;
+                },
+                .Gem => {
+                    bank.stockpile.gem += 1;
+                    Tutorial.progression_trigger(.collect_gem);
+                },
+                .Worker => unreachable,
+
+                .None => { // using this enum as a layer end collision check
+                    sfxNextLayer.play();
+                    if (bank.stockpile.gem < 6)
+                        bank.stockpile.gem = 6;
+
+                    bank.stockpile.drill = 0;
+                    bank.drillgen = 0;
+                    LayerProgress.increment();
+                    LayerProgress.draw(0);
+
+                    for (players[0..active_players]) |*p| {
+                        p.reset();
+                    }
+                    map.init_cave(LayerProgress.get_current());
+                    if (LayerProgress.get_current() == 6) {
+                        Tutorial.progression_trigger(.progress_core);
+                    }
+                },
+            }
+
+            SaveData.write_save();
+        }
     }
 }

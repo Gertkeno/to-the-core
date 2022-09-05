@@ -18,8 +18,8 @@ stockpile: Currency = .{
 drillgen: u32 = 0,
 
 const DrawStruct = struct {
-    width: i32,
-    height: i32,
+    width: u32,
+    height: u32,
     flags: u32,
     array: [*]const u8,
 };

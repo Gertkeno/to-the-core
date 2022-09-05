@@ -26,7 +26,7 @@ pub const Tiles = enum(u8) {
 tiles: [380]Tiles = undefined,
 
 frameCount: usize = 0,
-pickups: [60]Pickup = undefined,
+pickups: [90]Pickup = undefined,
 active: usize = 0,
 
 // tile properties //
@@ -207,13 +207,13 @@ fn simulate_cave(oldmap: []const bool, newmap: []bool) void {
     }
 }
 
-pub fn init_cave(self: *Self, layer: i32, myrng: std.rand.Random) void {
+pub fn init_cave(self: *Self, layer: i32) void {
     self.active = 0;
     var caveOldBuffer: [380]bool = undefined;
     var caveNewBuffer: [380]bool = undefined;
 
     for (caveOldBuffer) |*b| {
-        b.* = myrng.boolean();
+        b.* = rng.boolean();
     }
 
     var simsteps: usize = simulationSteps;
@@ -228,7 +228,7 @@ pub fn init_cave(self: *Self, layer: i32, myrng: std.rand.Random) void {
 
     var diamonds = std.math.max(5 - (layer >> 1), 1);
     while (diamonds > 0) : (diamonds -= 1) {
-        const index = myrng.uintAtMost(u32, 379);
+        const index = rng.uintAtMost(u32, 379);
         self.tiles[index] = .diamonds;
     }
 
@@ -238,7 +238,7 @@ pub fn init_cave(self: *Self, layer: i32, myrng: std.rand.Random) void {
     }
 
     for (caveOldBuffer) |*b| {
-        b.* = myrng.boolean();
+        b.* = rng.boolean();
     }
 
     simulate_cave(&caveOldBuffer, &caveNewBuffer);
@@ -301,11 +301,13 @@ fn random_adjacent_tile(index: usize) usize {
 
 pub fn add_pickup(self: *Self, index: usize, currency: Bank.CurrencyType) void {
     const pos = random_in_tile(index);
+    const t = @truncate(u16, self.frameCount);
     if (self.active < self.pickups.len) {
-        self.pickups[self.active] = Pickup.init_xy(pos.x, pos.y, currency);
+        self.pickups[self.active] = Pickup.init_xy(pos.x, pos.y, currency, t);
         self.active += 1;
     } else {
-        self.pickups[rng.uintLessThanBiased(u8, self.pickups.len)] = Pickup.init_xy(pos.x, pos.y, currency);
+        const overwritei = rng.uintLessThanBiased(u8, self.pickups.len);
+        self.pickups[overwritei] = Pickup.init_xy(pos.x, pos.y, currency, t);
         //w4.trace("pickups full");
     }
 }
@@ -320,6 +322,7 @@ pub fn update(self: *Self) void {
         self.add_pickup(random_adjacent_tile(190), .Crystal);
     }
 
+    // spawn from various generating tiles
     for (self.tiles) |tile, n| {
         switch (tile) {
             .spring => {
@@ -336,16 +339,13 @@ pub fn update(self: *Self) void {
             else => {},
         }
     }
-
-    for (self.pickups[0..self.active]) |*pickup| {
-        pickup.update();
-    }
 }
 
 pub fn draw_pickups(self: Self) void {
+    const t = @truncate(u16, self.frameCount);
     w4.DRAW_COLORS.* = 0x2430;
     for (self.pickups[0..self.active]) |pickup| {
-        pickup.draw();
+        pickup.draw(t);
     }
 }
 

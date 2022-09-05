@@ -6,23 +6,24 @@ const Bank = @import("Bank.zig");
 x: i32,
 y: i32,
 
-animationTime: u16 = 0,
 currency: Bank.CurrencyType,
+spawnTime: u16,
 
 const Self = @This();
 
-pub fn init_index(index: usize, kind: Bank.CurrencyType) Self {
+pub fn init_index(index: usize, kind: Bank.CurrencyType, t: u16) Self {
     const x = index % 20;
     const y = index / 20;
 
-    return init_xy(x * 8, y * 8, kind);
+    return init_xy(x * 8, y * 8, kind, t);
 }
 
-pub fn init_xy(x: i32, y: i32, kind: Bank.CurrencyType) Self {
+pub fn init_xy(x: i32, y: i32, kind: Bank.CurrencyType, t: u16) Self {
     return Self{
         .x = x,
         .y = y,
         .currency = kind,
+        .spawnTime = t,
     };
 }
 
@@ -35,7 +36,7 @@ fn jump_anim_offset(time: u16) i32 {
 }
 
 const Size = 4;
-pub fn draw(self: Self) void {
+pub fn draw(self: Self, animationTime: u16) void {
     const x = self.x;
     const y = self.y;
 
@@ -44,7 +45,7 @@ pub fn draw(self: Self) void {
         .Gem => &Bank.artGem,
         .None, .Worker => unreachable,
     };
-    const jump = jump_anim_offset(self.animationTime);
+    const jump = jump_anim_offset(animationTime -% self.spawnTime);
     w4.blit(sprite.array, x, y + jump, sprite.width, sprite.height, sprite.flags);
 }
 
@@ -56,8 +57,4 @@ pub fn contact(self: Self, x: i32, y: i32) bool {
     }
 
     return true;
-}
-
-pub fn update(self: *Self) void {
-    self.animationTime +%= 1;
 }

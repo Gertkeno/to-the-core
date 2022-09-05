@@ -10,7 +10,6 @@ const w4 = @import("wasm4.zig");
 
 extern var bank: Bank;
 extern var map: Layer;
-extern var player: Character;
 
 fn direct_neighbors(index: usize, tile: Layer.Tiles) u2 {
     var count: u2 = 0;
@@ -43,7 +42,7 @@ const icon_sell = [8]u8{
     0b00111100,
 };
 
-pub fn sell(index: usize) bool {
+pub fn sell(index: usize, _: *Character) bool {
     const tile = &map.tiles[index];
     switch (tile.*) {
         .workshop => {
@@ -86,7 +85,7 @@ const icon_dig = [8]u8{
     0b01100000,
 };
 
-pub fn dig(index: usize) bool {
+pub fn dig(index: usize, _: *Character) bool {
     if (bank.stockpile.crystal < 1)
         return false;
 
@@ -138,7 +137,7 @@ const icon_house = [8]u8{
 };
 
 const workshopCost = 4; // gem
-pub fn build_workshop(index: usize) bool {
+pub fn build_workshop(index: usize, _: *Character) bool {
     if (bank.stockpile.gem < workshopCost)
         return false;
 
@@ -172,7 +171,7 @@ const sfxSpring = Sound{
 };
 
 const springCost = 1; // worker
-pub fn build_spring(index: usize) bool {
+pub fn build_spring(index: usize, _: *Character) bool {
     if (bank.stockpile.worker < springCost)
         return false;
 
@@ -199,7 +198,7 @@ const icon_weavery = [8]u8{
 };
 
 const weaveryCost = 10; // Crystal
-pub fn build_weavery(index: usize) bool {
+pub fn build_weavery(index: usize, _: *Character) bool {
     if (bank.stockpile.crystal < weaveryCost)
         return false;
 
@@ -226,7 +225,7 @@ const icon_drill = [8]u8{
 };
 
 const drillCost = 4;
-pub fn build_drill(index: usize) bool {
+pub fn build_drill(index: usize, _: *Character) bool {
     if (bank.stockpile.worker < drillCost)
         return false;
 
@@ -273,7 +272,7 @@ const sfxTeleport = Sound{
 };
 var teleporterPos: ?usize = null;
 const teleportCost = 1;
-pub fn teleport(index: usize) bool {
+pub fn teleport(index: usize, player: *Character) bool {
     if (bank.stockpile.gem < teleportCost)
         return false;
     _ = index;
@@ -287,7 +286,7 @@ pub fn teleport(index: usize) bool {
 
 pub const Belt = struct {
     icon: *const [8]u8,
-    func: fn (usize) bool,
+    func: fn (usize, *Character) bool,
     cost: u32,
     currency: Bank.CurrencyType,
     name: []const u8,
