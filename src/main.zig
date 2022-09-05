@@ -1,6 +1,7 @@
 const w4 = @import("wasm4.zig");
 const std = @import("std");
 
+const Netplay = @import("Netplay.zig");
 const Controller = @import("Controller.zig");
 const Sound = @import("Sound.zig");
 
@@ -120,7 +121,7 @@ export fn update() void {
     map.draw_pickups();
 
     // draw player and tool ui
-    var drawingStockpile = for (players[0..active_players]) |player| {
+    const drawingStockpile = for (players[0..active_players]) |player| {
         if (player.in_left_corner()) {
             break false;
         }
@@ -135,8 +136,8 @@ export fn update() void {
 
         player.draw();
 
-        if (w4.NETPLAY.* & 0b100 > 0) {
-            if (n == w4.NETPLAY.* & 0b011) {
+        if (Netplay.enabled()) {
+            if (n == Netplay.player()) {
                 if (player.toolSelecting) |ts| {
                     ts.draw();
                 }
