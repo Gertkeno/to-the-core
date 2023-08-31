@@ -1,25 +1,24 @@
 const Character = @import("Character.zig");
 const Layer = @import("Layer.zig");
+const map: *Layer = &Layer.map;
 
 const Caveart = @import("Caveart.zig");
 
 const Tutorial = @import("TutorialWorm.zig");
 const Bank = @import("Bank.zig");
+const bank: *Bank = &Bank.bank;
 const Sound = @import("Sound.zig");
 const w4 = @import("wasm4.zig");
-
-extern var bank: Bank;
-extern var map: Layer;
 
 fn direct_neighbors(index: usize, tile: Layer.Tiles) u2 {
     var count: u2 = 0;
     const neighbors = [_]i32{ -20, -1, 1, 20 };
-    const sindex = @intCast(i32, index);
+    const sindex: i32 = @intCast(index);
     for (neighbors) |diff| {
         if (sindex + diff < 0 or sindex + diff > map.tiles.len)
             continue;
 
-        const neighbor = map.tiles[@intCast(usize, sindex + diff)];
+        const neighbor = map.tiles[@intCast(sindex + diff)];
         if (tile == .stone and (neighbor == .diamonds or neighbor == .gems or neighbor == .spring)) {
             count += 1;
         } else if (tile == .workshop and neighbor == .weavery) {
@@ -286,7 +285,7 @@ pub fn teleport(index: usize, player: *Character) bool {
 
 pub const Belt = struct {
     icon: *const [8]u8,
-    func: fn (usize, *Character) bool,
+    func: *const fn (usize, *Character) bool,
     cost: u32,
     currency: Bank.CurrencyType,
     name: []const u8,

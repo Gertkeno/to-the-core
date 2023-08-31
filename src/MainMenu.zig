@@ -6,6 +6,29 @@ const Sound = @import("Sound.zig");
 
 const Self = @This();
 index: usize = 0,
+seed: u64,
+seed_text_buf: [14]u8 = "Seed:         ".*,
+seed_text_len: u8 = 0,
+
+pub fn init(seed: u64) Self {
+    var res = Self{
+        .seed = seed,
+    };
+    res.update_seed_text();
+
+    return res;
+}
+
+pub fn update_seed_text(self: *Self) void {
+    const offset = 5;
+    self.seed_text_len = @intCast(std.fmt.formatIntBuf(
+        self.seed_text_buf[offset..],
+        self.seed,
+        16,
+        .upper,
+        .{},
+    ) + offset);
+}
 
 pub const Options = enum {
     @"New Game",
@@ -37,8 +60,16 @@ pub fn update(self: *Self, controls: Controller) ?Options {
         ticky.play();
     }
 
+    if (controls.held.left) {
+        self.seed -%= 1;
+        self.update_seed_text();
+    } else if (controls.held.right) {
+        self.seed +%= 1;
+        self.update_seed_text();
+    }
+
     if (controls.released.x) {
-        return @intToEnum(Options, self.index);
+        return @enumFromInt(self.index);
     }
 
     w4.DRAW_COLORS.* = 0x1234;
@@ -47,7 +78,7 @@ pub fn update(self: *Self, controls: Controller) ?Options {
     w4.DRAW_COLORS.* = 0x01;
     w4.text("TO THE CORE", 80 - 44, 36);
 
-    inline for (asFields) |efield, n| {
+    inline for (asFields, 0..) |efield, n| {
         if (n == self.index) {
             w4.DRAW_COLORS.* = 0x41;
         } else {
@@ -56,6 +87,12 @@ pub fn update(self: *Self, controls: Controller) ?Options {
 
         w4.text(efield.name, 80 - efield.name.len * 4, 110 + n * 10);
     }
+
+    w4.DRAW_COLORS.* = 0x01;
+    const seed_text = self.seed_text_buf[0..self.seed_text_len];
+    const x = 80 - self.seed_text_len * 4;
+    const y = 110 + asFields.len * 10;
+    w4.text(seed_text, x, y);
 
     return null;
 }

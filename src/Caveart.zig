@@ -131,11 +131,11 @@ pub const Faces = packed struct {
     down: bool = false,
 
     pub fn bor(a: Faces, b: Faces) Faces {
-        return @bitCast(Faces, @bitCast(u4, a) | @bitCast(u4, b));
+        return @bitCast(@as(u4, @bitCast(a)) | @as(u4, @bitCast(b)));
     }
 
     pub fn bnot(a: Faces) Faces {
-        return @bitCast(Faces, ~@bitCast(u4, a));
+        return @bitCast(~@as(u4, @bitCast(a)));
     }
 };
 
@@ -146,7 +146,7 @@ fn bor_tile(face: Faces, tileset: []const [8]u8) u64 {
     var buffer: u64 = 0;
     var i: u3 = 0;
     while (i < 4) : (i += 1) {
-        if (@bitCast(u4, face) & (@as(u5, 1) << i) == 0) {
+        if (@as(u4, @bitCast(face)) & (@as(u5, 1) << i) == 0) {
             buffer |= std.bytesAsValue(u64, &tileset[i]).*;
         }
     }

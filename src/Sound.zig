@@ -20,8 +20,8 @@ channel: u8 = 2,
 mode: u8 = 0,
 
 pub fn play(self: Self) void {
-    const freq = @bitCast(u32, self.freq);
-    const adsr = @bitCast(u32, self.adsr);
+    const freq: u32 = @bitCast(self.freq);
+    const adsr: u32 = @bitCast(self.adsr);
     const flags = self.channel | self.mode;
 
     tone(freq, adsr, self.volume, flags);

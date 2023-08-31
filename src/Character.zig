@@ -25,12 +25,11 @@ const crosshair = [8]u8{
 const Controller = @import("Controller.zig");
 const Sound = @import("Sound.zig");
 const Bank = @import("Bank.zig");
+const bank: *Bank = &Bank.bank;
 const Layer = @import("Layer.zig");
+const map: *Layer = &Layer.map;
 const ToolSelector = @import("ToolSelector.zig");
 const Belt = @import("Tool.zig").Belt;
-
-extern var map: Layer;
-extern var bank: Bank;
 
 const SubRatio = 2;
 const TileRatio = SubRatio + 3;
@@ -55,7 +54,7 @@ fn tool_tip_stringify(mstock: u32, mcost: u32, buffer: []u8) []const u8 {
     var cost = mcost;
     var index: usize = 6;
     while (cost > 0) {
-        buffer[index] = '0' + @intCast(u8, cost % 10);
+        buffer[index] = '0' + @as(u8, @intCast(cost % 10));
         index -= 1;
         cost /= 10;
     }
@@ -69,7 +68,7 @@ fn tool_tip_stringify(mstock: u32, mcost: u32, buffer: []u8) []const u8 {
     } else {
         var stock = mstock;
         while (stock > 0) {
-            buffer[index] = '0' + @intCast(u8, stock % 10);
+            buffer[index] = '0' + @as(u8, @intCast(stock % 10));
             index -= 1;
             stock /= 10;
         }
@@ -95,7 +94,7 @@ fn tool_tile_position(self: Self) struct { x: i32, y: i32 } {
     } else if (toolx > 19) {
         toolx = 0;
     }
-    const yoffset: i32 = 32 * @intCast(i32, self.heldup);
+    const yoffset: i32 = 32 * @as(i32, @intCast(self.heldup));
     const tooly: i32 = std.math.clamp((self.y + 12 - 32 + yoffset) >> TileRatio, 0, 18);
 
     return .{
@@ -165,7 +164,7 @@ pub fn player_tile_position(self: Self) usize {
     const x: i32 = std.math.clamp((self.x + 8) >> TileRatio, 0, 19);
     const y: i32 = std.math.clamp((self.y - 20) >> TileRatio, 0, 18);
 
-    return @intCast(usize, x + y * 20);
+    return @intCast(x + y * 20);
 }
 
 const toolfail = Sound{
@@ -246,7 +245,7 @@ pub fn update(self: *Self, controls: Controller) void {
         }
     }
 
-    if (@bitCast(u8, controls.held) & 0b11110000 != 0) {
+    if (@as(u8, @bitCast(controls.held)) & 0b11110000 != 0) {
         self.walkanimation += 1;
         if (self.walkanimation >= (frames.len * 4)) {
             self.walkanimation = 0;
@@ -256,7 +255,7 @@ pub fn update(self: *Self, controls: Controller) void {
     if (controls.released.x and self.tool != null) {
         // use too
         const tool = self.tool_tile_position();
-        const tindex = @intCast(usize, tool.x + tool.y * 20);
+        const tindex: usize = @intCast(tool.x + tool.y * 20);
         if (!self.tool.?.func(tindex, self)) {
             if (self.toolerror == null) {
                 self.toolerror = 0;

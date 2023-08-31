@@ -27,8 +27,8 @@ const progressionData: []const []const u8 = &.{
 var currentProgress: Progression = .welcome;
 
 pub fn progression_trigger(newprogress: Progression) void {
-    const asi = @enumToInt(newprogress);
-    if (@enumToInt(currentProgress) < asi) {
+    const asi = @intFromEnum(newprogress);
+    if (@intFromEnum(currentProgress) < asi) {
         currentProgress = newprogress;
         lineAnimation = 0;
         mline = 0;

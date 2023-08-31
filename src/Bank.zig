@@ -1,4 +1,5 @@
 const Self = @This();
+pub var bank = Self{};
 const std = @import("std");
 
 pub const DrillShift = 9;

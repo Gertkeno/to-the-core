@@ -26,23 +26,21 @@ const palette: []const [4]u32 = &.{
     Palette.halloween,
 };
 
-extern const rng: std.rand.Random;
-
 //const majorLayerSize = 2;
-fn set_layername(newlayer: u8) void {
+fn set_layername(newlayer: u8, rng: std.rand.Random) void {
     const nameindex = newlayer;
-    std.mem.set(u8, w4.FRAMEBUFFER[0..320], 0);
+    @memset(w4.FRAMEBUFFER[0..320], 0);
     if (newlayer == 255) {
         layername = "kill screen";
 
-        for (w4.PALETTE.*) |*p| {
+        for (w4.PALETTE) |*p| {
             p.* = rng.int(u32);
         }
     } else if (nameindex >= names.len) {
         layername = "Winner!?";
 
         const npalette = palette[newlayer % 7];
-        for (w4.PALETTE.*) |*p, n| {
+        for (w4.PALETTE, 0..) |*p, n| {
             p.* = npalette[n];
         }
     } else {
@@ -55,23 +53,23 @@ fn set_layername(newlayer: u8) void {
         layername = layernamebuffer[0..layertype.len];
 
         const npalette = palette[nameindex];
-        for (w4.PALETTE.*) |*p, n| {
+        for (w4.PALETTE, 0..) |*p, n| {
             p.* = npalette[n];
         }
     }
 }
 
-pub fn increment() void {
+pub fn increment(rng: std.rand.Random) void {
     if (currentlayer < 255) {
-        set_layer(currentlayer + 1);
+        set_layer(currentlayer + 1, rng);
     } else {
-        set_layer(255);
+        set_layer(255, rng);
     }
 }
 
-pub fn set_layer(value: u8) void {
+pub fn set_layer(value: u8, rng: std.rand.Random) void {
     currentlayer = value;
-    set_layername(currentlayer);
+    set_layername(currentlayer, rng);
 }
 
 pub fn get_current() u8 {
@@ -85,7 +83,7 @@ const ups_flags = 1; // BLIT_2BPP
 const ups = [16]u8{ 0xb3, 0xb3, 0xc4, 0xc4, 0x19, 0x19, 0x6e, 0x6e, 0xb3, 0xb3, 0xc4, 0xc4, 0x19, 0x19, 0x6e, 0x6e };
 
 var animation: u8 = 0;
-pub fn draw(progress: u32) void {
+pub fn draw(progress: u32, rng: std.rand.Random) void {
     if (progress >= 160) {
         w4.DRAW_COLORS.* = 0x1234;
         animation += 1;
@@ -100,7 +98,7 @@ pub fn draw(progress: u32) void {
         rng.bytes(w4.FRAMEBUFFER[0..320]);
 
         const p2 = @divTrunc(progress, 4);
-        for (w4.FRAMEBUFFER[0..320]) |*byte, n| {
+        for (w4.FRAMEBUFFER[0..320], 0..) |*byte, n| {
             const x = n % 40;
             if (p2 >= x) {
                 byte.* |= 0b10101010;
@@ -112,7 +110,7 @@ pub fn draw(progress: u32) void {
                         1 => 0b00000011,
                         2 => 0b00011111,
                         3 => 0b01111111,
-                        else => @as(u8, 0xff),
+                        else => 0xff,
                     };
                 }
             } else {
@@ -122,6 +120,6 @@ pub fn draw(progress: u32) void {
     }
 
     w4.DRAW_COLORS.* = 0x02;
-    const x = @intCast(i32, 80 - (layername.len * 4));
+    const x: i32 = @intCast(80 - (layername.len * 4));
     w4.text(layername, x, 0);
 }

@@ -6,10 +6,12 @@ const Controller = @import("Controller.zig");
 const Sound = @import("Sound.zig");
 
 const Layer = @import("Layer.zig");
+const map: *Layer = &Layer.map;
 const Character = @import("Character.zig");
 const LayerProgress = @import("LayerProgress.zig");
 const Palette = @import("Palette.zig");
 const Bank = @import("Bank.zig");
+const bank: *Bank = &Bank.bank;
 
 const Tutorial = @import("TutorialWorm.zig");
 const MainMenu = @import("MainMenu.zig");
@@ -23,8 +25,6 @@ const gamepads = [4]*const u8{
 };
 var controls = [4]Controller{ .{}, .{}, .{}, .{} };
 
-export var map = Layer{};
-export var bank = Bank{};
 var players = [4]Character{
     .{ .color = 0x4023 },
     .{ .color = 0x4032 },
@@ -35,11 +35,12 @@ var active_players: usize = 1;
 
 // 82715
 var randombacker = std.rand.DefaultPrng.init(82724);
-export var rng: std.rand.Random = undefined;
-var mainMenu: ?MainMenu = MainMenu{};
+var rng: std.rand.Random = undefined;
+
+var mainMenu: ?MainMenu = MainMenu.init(82724);
 
 export fn start() void {
-    for (w4.PALETTE.*) |*palette, n| {
+    for (w4.PALETTE, 0..) |*palette, n| {
         palette.* = Palette.cards[n];
     }
 
@@ -66,9 +67,9 @@ const sfxNextLayer = Sound{
 
 export fn update() void {
     // poll all controller changes
-    for (controls) |*controller, n| {
+    for (&controls, 0..) |*controller, n| {
         if (gamepads[n].* > 0) {
-            active_players = std.math.max(active_players, n + 1);
+            active_players = @max(active_players, n + 1);
         }
         controller.update(gamepads[n].*);
     }
@@ -78,9 +79,10 @@ export fn update() void {
         if (mm.update(controls[0])) |newstate| {
             switch (newstate) {
                 .@"New Game" => {
-                    bank = Bank{};
-                    LayerProgress.set_layer(0);
-                    map.init_cave(0);
+                    randombacker.seed(mm.seed);
+                    bank.* = Bank{};
+                    LayerProgress.set_layer(0, rng);
+                    map.init_cave(0, rng);
                 },
                 .@"Load Game" => {
                     if (SaveData.read_save()) {
@@ -97,7 +99,7 @@ export fn update() void {
     }
 
     // background draw map and title bar
-    LayerProgress.draw(bank.stockpile.drill >> Bank.DrillShift);
+    LayerProgress.draw(bank.stockpile.drill >> Bank.DrillShift, rng);
     map.draw_full();
 
     // single player only tutorial worm
@@ -107,7 +109,7 @@ export fn update() void {
 
     // most game logic updates
     map.update();
-    for (players[0..active_players]) |*player, n| {
+    for (players[0..active_players], 0..) |*player, n| {
         player.update(controls[n]);
     }
 
@@ -127,10 +129,10 @@ export fn update() void {
         }
     } else true;
 
-    for (players[0..active_players]) |player, n| {
+    for (players[0..active_players], 0..) |player, n| {
         if (drawingStockpile) {
             if (player.tool) |tool| {
-                Character.draw_stockpile(tool, @intCast(i32, n));
+                Character.draw_stockpile(tool, @intCast(n));
             }
         }
 
@@ -169,13 +171,13 @@ export fn update() void {
 
                     bank.stockpile.drill = 0;
                     bank.drillgen = 0;
-                    LayerProgress.increment();
-                    LayerProgress.draw(0);
+                    LayerProgress.increment(rng);
+                    LayerProgress.draw(0, rng);
 
                     for (players[0..active_players]) |*p| {
                         p.reset();
                     }
-                    map.init_cave(LayerProgress.get_current());
+                    map.init_cave(LayerProgress.get_current(), rng);
                     if (LayerProgress.get_current() == 6) {
                         Tutorial.progression_trigger(.progress_core);
                     }

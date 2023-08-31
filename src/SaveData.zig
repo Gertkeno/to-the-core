@@ -1,11 +1,11 @@
 const w4 = @import("wasm4.zig");
-const std = @import("std").mem;
+const std = @import("std");
 
 const Layer = @import("Layer.zig");
+const map: *Layer = &Layer.map;
 const LayerProgress = @import("LayerProgress.zig");
 const Bank = @import("Bank.zig");
-extern var bank: Bank;
-extern var map: Layer;
+const bank: *Bank = &Bank.bank;
 
 var savebuffer: [6 + 140]u32 = undefined;
 const saveSize = @sizeOf(@TypeOf(savebuffer));
@@ -26,17 +26,17 @@ pub fn write_save() void {
     var mindex: usize = 0;
     while (mindex < map.tiles.len / 4) {
         // evil lol, mild compression
-        const f = @intToPtr([*]u32, @ptrToInt(&map.tiles));
+        const f: [*]u32 = @ptrFromInt(@intFromPtr(&map.tiles));
         savebuffer[mindex + 6] = f[mindex];
 
         mindex += 1;
     }
 
-    _ = w4.diskw(std.asBytes(&savebuffer), saveSize);
+    _ = w4.diskw(std.mem.asBytes(&savebuffer), saveSize);
 }
 
 pub fn read_save() bool {
-    const readCount = w4.diskr(std.asBytes(&savebuffer), saveSize);
+    const readCount = w4.diskr(std.mem.asBytes(&savebuffer), saveSize);
     if (readCount != saveSize) {
         return false;
     }
@@ -46,14 +46,16 @@ pub fn read_save() bool {
     bank.stockpile.worker = savebuffer[2];
     bank.stockpile.drill = savebuffer[3];
     bank.drillgen = savebuffer[4];
-    LayerProgress.set_layer(@truncate(u8, savebuffer[5]));
+    var rng = std.rand.DefaultPrng.init(savebuffer[0] + savebuffer[1] + savebuffer[2] + savebuffer[4]);
+
+    LayerProgress.set_layer(@truncate(savebuffer[5]), rng.random());
 
     var sindex: usize = 6;
     var mindex: usize = 0;
     while (mindex < map.tiles.len) {
-        const buf = std.asBytes(&savebuffer[sindex]);
-        for (buf) |tile, n| {
-            map.tiles[mindex + n] = @intToEnum(Layer.Tiles, tile);
+        const buf = std.mem.asBytes(&savebuffer[sindex]);
+        for (buf, 0..) |tile, n| {
+            map.tiles[mindex + n] = @enumFromInt(tile);
         }
 
         sindex += 1;

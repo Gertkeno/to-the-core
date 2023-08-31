@@ -7,8 +7,7 @@ const Sound = @import("Sound.zig");
 const Pickup = @import("Pickup.zig");
 
 const Self = @This();
-
-extern var rng: std.rand.Random;
+pub var map = Self{};
 
 pub const Tiles = enum(u8) {
     // cave //
@@ -28,6 +27,7 @@ tiles: [380]Tiles = undefined,
 frameCount: usize = 0,
 pickups: [90]Pickup = undefined,
 active: usize = 0,
+rng: std.rand.Random = undefined,
 
 // tile properties //
 fn is_raised(tile: Tiles) bool {
@@ -49,13 +49,13 @@ fn is_empty(tile: Tiles) bool {
 }
 
 pub fn walkable(self: Self, x: i32, y: i32) bool {
-    const index = @intCast(usize, x + y * 20);
+    const index: usize = @intCast(x + y * 20);
     const tile = self.tiles[index];
 
     return tile == .empty;
 }
 
-fn get_surrounding_tile(self: Self, index: usize, func: fn (Tiles) bool) Cave.Faces {
+fn get_surrounding_tile(self: Self, index: usize, func: *const fn (Tiles) bool) Cave.Faces {
     var faces: Cave.Faces = undefined;
     const x = index % 20;
     const y = index / 20;
@@ -90,8 +90,8 @@ fn get_surrounding_tile(self: Self, index: usize, func: fn (Tiles) bool) Cave.Fa
 // DRAW //
 fn draw_tile(self: Self, index: usize) void {
     const tile = self.tiles[index];
-    const x: i32 = @intCast(i32, index % 20 * 8);
-    const y: i32 = @intCast(i32, index / 20 * 8) + 8;
+    const x: i32 = @intCast(index % 20 * 8);
+    const y = @as(i32, @intCast(index / 20 * 8)) + 8;
     switch (tile) {
         .stone, .diamonds, .gems, .spring => {
             w4.DRAW_COLORS.* = 0x43;
@@ -136,18 +136,18 @@ fn draw_tile(self: Self, index: usize) void {
 }
 
 pub fn draw_full(self: Self) void {
-    for (self.tiles) |_, n| {
+    for (self.tiles, 0..) |_, n| {
         self.draw_tile(n);
     }
 }
 
 pub fn draw_at(self: Self, x: i32, y: i32) void {
-    const index = @intCast(usize, x + y * 20);
+    const index: usize = @intCast(x + y * 20);
     const surrounding = [_]i32{ -21, -20, -19, -1, 1, 19, 20, 21 };
 
     for (surrounding) |diff| {
         if (-diff < index and index + diff < self.tiles.len) {
-            const dindex = @intCast(usize, index + diff);
+            const dindex: usize = @intCast(index + diff);
             self.draw_tile(dindex);
         }
     }
@@ -178,7 +178,7 @@ fn alive_neighbours(bitset: []const bool, x: i32, y: i32) u8 {
     const index = x + y * 20;
     for (surrounding) |diff| {
         if (index + diff > 0 and index + diff < bitset.len) {
-            const dindex = @intCast(usize, index + diff);
+            const dindex: usize = @intCast(index + diff);
             if (bitset[dindex]) {
                 alive += 1;
             }
@@ -195,7 +195,7 @@ fn simulate_cave(oldmap: []const bool, newmap: []bool) void {
     while (y < 19) : (y += 1) {
         var x: i32 = 0;
         while (x < 20) : (x += 1) {
-            const index = @intCast(usize, x + y * 20);
+            const index: usize = @intCast(x + y * 20);
             const neighbours = alive_neighbours(oldmap, x, y);
 
             if (oldmap[index]) {
@@ -207,12 +207,13 @@ fn simulate_cave(oldmap: []const bool, newmap: []bool) void {
     }
 }
 
-pub fn init_cave(self: *Self, layer: i32) void {
+pub fn init_cave(self: *Self, layer: i32, rng: std.rand.Random) void {
     self.active = 0;
+    self.rng = rng;
     var caveOldBuffer: [380]bool = undefined;
     var caveNewBuffer: [380]bool = undefined;
 
-    for (caveOldBuffer) |*b| {
+    for (&caveOldBuffer) |*b| {
         b.* = rng.boolean();
     }
 
@@ -222,11 +223,11 @@ pub fn init_cave(self: *Self, layer: i32) void {
         std.mem.copy(bool, &caveOldBuffer, &caveNewBuffer);
     }
 
-    for (self.tiles) |*tile, n| {
+    for (&self.tiles, 0..) |*tile, n| {
         tile.* = if (caveOldBuffer[n]) .stone else .empty;
     }
 
-    var diamonds = std.math.max(5 - (layer >> 1), 1);
+    var diamonds = @max(5 - (layer >> 1), 1);
     while (diamonds > 0) : (diamonds -= 1) {
         const index = rng.uintAtMost(u32, 379);
         self.tiles[index] = .diamonds;
@@ -237,7 +238,7 @@ pub fn init_cave(self: *Self, layer: i32) void {
         self.tiles[index] = .empty;
     }
 
-    for (caveOldBuffer) |*b| {
+    for (&caveOldBuffer) |*b| {
         b.* = rng.boolean();
     }
 
@@ -245,7 +246,7 @@ pub fn init_cave(self: *Self, layer: i32) void {
     std.mem.copy(bool, &caveOldBuffer, &caveNewBuffer);
     simulate_cave(&caveOldBuffer, &caveNewBuffer);
 
-    for (self.tiles) |*tile, n| {
+    for (&self.tiles, 0..) |*tile, n| {
         if (!caveNewBuffer[n] and tile.* == .stone) {
             tile.* = .gems;
         }
@@ -258,12 +259,12 @@ pub fn get_tile(self: *Self, x: i32, y: i32) *Tiles {
         unreachable;
     }
 
-    const index = @intCast(usize, x + y * 20);
+    const index: usize = @intCast(x + y * 20);
     return &self.tiles[index];
 }
 
 pub fn set_tile(self: *Self, x: i32, y: i32, tile: Tiles) void {
-    const index = @intCast(usize, x + y * 20);
+    const index: usize = @intCast(x + y * 20);
     self.tiles[index] = tile;
 }
 
@@ -273,9 +274,9 @@ const Point = struct {
     y: i32,
 };
 
-fn random_in_tile(index: usize) Point {
-    const x = @intCast(i32, index % 20);
-    const y = @intCast(i32, index / 20);
+fn random_in_tile(index: usize, rng: std.rand.Random) Point {
+    const x: i32 = @intCast(index % 20);
+    const y: i32 = @intCast(index / 20);
 
     return Point{
         .x = x * 8 + rng.uintAtMost(u8, 4),
@@ -283,30 +284,30 @@ fn random_in_tile(index: usize) Point {
     };
 }
 
-fn random_adjacent_tile(index: usize) usize {
-    const sindex = @intCast(i32, index);
+fn random_adjacent_tile(index: usize, rng: std.rand.Random) usize {
+    const sindex: i32 = @intCast(index);
     const surrounding = [_]i8{ -20, -1, 1, 20 };
     const diff = surrounding[rng.uintLessThanBiased(u8, 4)];
     if (sindex + diff < 0 or sindex + diff > 380) {
         for (surrounding) |ndiff| {
             if (sindex + ndiff > 0 and sindex + ndiff < 380) {
-                return @intCast(usize, sindex + ndiff);
+                return @intCast(sindex + ndiff);
             }
         }
         unreachable;
     } else {
-        return @intCast(usize, sindex + diff);
+        return @intCast(sindex + diff);
     }
 }
 
 pub fn add_pickup(self: *Self, index: usize, currency: Bank.CurrencyType) void {
-    const pos = random_in_tile(index);
-    const t = @truncate(u16, self.frameCount);
+    const pos = random_in_tile(index, self.rng);
+    const t: u16 = @truncate(self.frameCount);
     if (self.active < self.pickups.len) {
         self.pickups[self.active] = Pickup.init_xy(pos.x, pos.y, currency, t);
         self.active += 1;
     } else {
-        const overwritei = rng.uintLessThanBiased(u8, self.pickups.len);
+        const overwritei = self.rng.uintLessThanBiased(u8, self.pickups.len);
         self.pickups[overwritei] = Pickup.init_xy(pos.x, pos.y, currency, t);
         //w4.trace("pickups full");
     }
@@ -319,22 +320,22 @@ pub fn update(self: *Self) void {
 
     // always spawn a crystal in the center for saftey
     if (self.frameCount % springInterval == 0 and self.tiles[190] == .empty) {
-        self.add_pickup(random_adjacent_tile(190), .Crystal);
+        self.add_pickup(random_adjacent_tile(190, self.rng), .Crystal);
     }
 
     // spawn from various generating tiles
-    for (self.tiles) |tile, n| {
+    for (self.tiles, 0..) |tile, n| {
         switch (tile) {
             .spring => {
                 if ((n + self.frameCount) % springInterval != 0)
                     continue;
 
-                self.add_pickup(random_adjacent_tile(n), .Crystal);
+                self.add_pickup(random_adjacent_tile(n, self.rng), .Crystal);
             },
             .weavery => {
                 if ((n * n + self.frameCount) % weaveryInterval != 0)
                     continue;
-                self.add_pickup(random_adjacent_tile(n), .Gem);
+                self.add_pickup(random_adjacent_tile(n, self.rng), .Gem);
             },
             else => {},
         }
@@ -342,7 +343,7 @@ pub fn update(self: *Self) void {
 }
 
 pub fn draw_pickups(self: Self) void {
-    const t = @truncate(u16, self.frameCount);
+    const t: u16 = @truncate(self.frameCount);
     w4.DRAW_COLORS.* = 0x2430;
     for (self.pickups[0..self.active]) |pickup| {
         pickup.draw(t);
@@ -356,9 +357,9 @@ const sfxPickup = Sound{
     .channel = w4.TONE_MODE3,
 };
 const Bank = @import("Bank.zig");
-extern const bank: Bank;
+const bank: *Bank = &Bank.bank;
 pub fn check_pickups(self: *Self, charx: i32, chary: i32) ?Bank.CurrencyType {
-    for (self.pickups[0..self.active]) |pickup, n| {
+    for (self.pickups[0..self.active], 0..) |pickup, n| {
         if (pickup.contact(charx, chary)) {
             sfxPickup.play();
             const c = pickup.currency;
