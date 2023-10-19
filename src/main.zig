@@ -86,6 +86,7 @@ export fn update() void {
                 },
                 .@"Load Game" => {
                     if (SaveData.read_save()) {
+                        map.rng = rng;
                         Tutorial.disable();
                     } else { // don't close the menu
                         return;
