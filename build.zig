@@ -1,27 +1,23 @@
 const std = @import("std");
 
 pub fn build(b: *std.Build) !void {
-    const target = std.zig.CrossTarget{
-        .cpu_arch = .wasm32,
-        .os_tag = .freestanding,
-    };
-    const optimize = b.standardOptimizeOption(.{});
-
-    const lib = b.addSharedLibrary(.{
+    const exe = b.addExecutable(.{
         .name = "cart",
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .version = try std.SemanticVersion.parse("3.0.1"),
-        .target = target,
-        .optimize = optimize,
+        .target = b.resolveTargetQuery(.{
+            .cpu_arch = .wasm32,
+            .os_tag = .freestanding,
+        }),
+        .optimize = b.standardOptimizeOption(.{}),
     });
 
-    lib.import_memory = true;
-    lib.initial_memory = 65536;
-    lib.max_memory = 65536;
-    lib.stack_size = 14752;
+    exe.entry = .disabled;
+    exe.root_module.export_symbol_names = &[_][]const u8{ "start", "update" };
+    exe.import_memory = true;
+    exe.initial_memory = 65536;
+    exe.max_memory = 65536;
+    exe.stack_size = 14752;
 
-    // Export WASM-4 symbols
-    lib.export_symbol_names = &[_][]const u8{ "start", "update" };
-
-    b.installArtifact(lib);
+    b.installArtifact(exe);
 }

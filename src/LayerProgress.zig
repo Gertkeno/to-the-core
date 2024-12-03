@@ -45,7 +45,7 @@ fn set_layername(newlayer: u8, rng: std.rand.Random) void {
         }
     } else {
         const layertype = names[nameindex];
-        std.mem.copy(u8, &layernamebuffer, layertype);
+        @memcpy(&layernamebuffer, layertype);
         // up to 9 extra layers between major layer & palette changes
         //layernamebuffer[layertype.len] = ' ';
         //layernamebuffer[layertype.len + 1] = '0' + (newlayer % majorLayerSize + 1);

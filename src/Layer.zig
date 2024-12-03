@@ -37,7 +37,11 @@ fn is_raised(tile: Tiles) bool {
         .gems,
         .spring,
         => true,
-        .empty, .drill, .workshop, .weavery => false,
+        .empty,
+        .drill,
+        .workshop,
+        .weavery,
+        => false,
     };
 }
 
@@ -88,7 +92,7 @@ fn get_surrounding_tile(self: Self, index: usize, func: *const fn (Tiles) bool) 
 }
 
 // DRAW //
-fn draw_tile(self: Self, index: usize) void {
+inline fn draw_tile(self: Self, index: usize) void {
     const tile = self.tiles[index];
     const x: i32 = @intCast(index % 20 * 8);
     const y = @as(i32, @intCast(index / 20 * 8)) + 8;
@@ -100,7 +104,8 @@ fn draw_tile(self: Self, index: usize) void {
         },
         .empty => {
             w4.DRAW_COLORS.* = 0x21;
-            Cave.blitempty(self.get_surrounding_tile(index, is_empty), x, y);
+            const empties = self.get_surrounding_tile(index, is_empty);
+            Cave.blitempty(empties, x, y);
         },
         .workshop => {
             w4.DRAW_COLORS.* = 0x1234;
@@ -138,18 +143,6 @@ fn draw_tile(self: Self, index: usize) void {
 pub fn draw_full(self: Self) void {
     for (self.tiles, 0..) |_, n| {
         self.draw_tile(n);
-    }
-}
-
-pub fn draw_at(self: Self, x: i32, y: i32) void {
-    const index: usize = @intCast(x + y * 20);
-    const surrounding = [_]i32{ -21, -20, -19, -1, 1, 19, 20, 21 };
-
-    for (surrounding) |diff| {
-        if (-diff < index and index + diff < self.tiles.len) {
-            const dindex: usize = @intCast(index + diff);
-            self.draw_tile(dindex);
-        }
     }
 }
 
@@ -220,7 +213,7 @@ pub fn init_cave(self: *Self, layer: i32, rng: std.rand.Random) void {
     var simsteps: usize = simulationSteps;
     while (simsteps > 0) : (simsteps -= 1) {
         simulate_cave(&caveOldBuffer, &caveNewBuffer);
-        std.mem.copy(bool, &caveOldBuffer, &caveNewBuffer);
+        @memcpy(&caveOldBuffer, &caveNewBuffer);
     }
 
     for (&self.tiles, 0..) |*tile, n| {
@@ -243,7 +236,7 @@ pub fn init_cave(self: *Self, layer: i32, rng: std.rand.Random) void {
     }
 
     simulate_cave(&caveOldBuffer, &caveNewBuffer);
-    std.mem.copy(bool, &caveOldBuffer, &caveNewBuffer);
+    @memcpy(&caveOldBuffer, &caveNewBuffer);
     simulate_cave(&caveOldBuffer, &caveNewBuffer);
 
     for (&self.tiles, 0..) |*tile, n| {

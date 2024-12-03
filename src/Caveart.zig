@@ -142,18 +142,18 @@ pub const Faces = packed struct {
 const w4 = @import("wasm4.zig");
 const std = @import("std").mem;
 
-fn bor_tile(face: Faces, tileset: []const [8]u8) u64 {
-    var buffer: u64 = 0;
-    var i: u3 = 0;
-    while (i < 4) : (i += 1) {
-        if (@as(u4, @bitCast(face)) & (@as(u5, 1) << i) == 0) {
-            buffer |= std.bytesAsValue(u64, &tileset[i]).*;
+fn bor_tile(face: Faces, tileset: []const [8]u8) i64 {
+    const face_bits: u4 = @bitCast(face);
+    var buffer: i64 = 0;
+    inline for (.{ 1, 2, 4, 8 }, 0..) |bit, i| {
+        if (face_bits & bit == 0) {
+            buffer |= std.bytesAsValue(i64, &tileset[i]).*;
         }
     }
 
     if (buffer == 0) {
         // sometimes debug-unreachable crashes?? hard coded indecies?
-        buffer |= std.bytesAsValue(u64, &tileset[4]).*;
+        buffer |= std.bytesAsValue(i64, &tileset[4]).*;
     }
 
     return buffer;
