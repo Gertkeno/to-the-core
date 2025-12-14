@@ -22,12 +22,14 @@ pub const Tiles = enum(u8) {
     drill,
 };
 
-tiles: [380]Tiles = undefined,
+const TILE_MAX = 19 * 20;
+tiles: [TILE_MAX]Tiles = undefined,
+dirty_flags: [19]u32 = [_]u32{0xffffffff} ** 19,
 
 frameCount: usize = 0,
 pickups: [90]Pickup = undefined,
 active: usize = 0,
-rng: std.rand.Random = undefined,
+rng: std.Random = undefined,
 
 // tile properties //
 fn is_raised(tile: Tiles) bool {
@@ -140,10 +142,32 @@ inline fn draw_tile(self: Self, index: usize) void {
     }
 }
 
-pub fn draw_full(self: Self) void {
+pub fn draw_full(self: *Self) void {
     for (self.tiles, 0..) |_, n| {
-        self.draw_tile(n);
+        const x: u5 = @intCast(n % 20);
+        const y = n / 20;
+
+        const dirty: bool = (self.dirty_flags[y] & (@as(u32, 0b1) << x)) != 0;
+        if (dirty) {
+            // expensive stone/empty bitwise ors ~4 times per 20*19 tiles
+            self.draw_tile(n);
+        }
     }
+
+    @memset(&self.dirty_flags, 0);
+}
+
+pub fn set_dirty(self: *Self, x: u5, y: u5) void {
+    if (y < 18)
+        self.dirty_flags[y + 1] |= @as(u32, 0b111) << @max(x, 1) - 1;
+    if (y != 0)
+        self.dirty_flags[y - 1] |= @as(u32, 0b111) << @max(x, 1) - 1;
+    if (y < 19)
+        self.dirty_flags[y + 0] |= @as(u32, 0b111) << @max(x, 1) - 1;
+}
+
+pub fn set_dirty_all(self: *Self) void {
+    @memset(&self.dirty_flags, 0xFFFFFFFF);
 }
 
 // INITIALIZEATION //
@@ -200,11 +224,11 @@ fn simulate_cave(oldmap: []const bool, newmap: []bool) void {
     }
 }
 
-pub fn init_cave(self: *Self, layer: i32, rng: std.rand.Random) void {
+pub fn init_cave(self: *Self, layer: i32, rng: std.Random) void {
     self.active = 0;
     self.rng = rng;
-    var caveOldBuffer: [380]bool = undefined;
-    var caveNewBuffer: [380]bool = undefined;
+    var caveOldBuffer: [TILE_MAX]bool = undefined;
+    var caveNewBuffer: [TILE_MAX]bool = undefined;
 
     for (&caveOldBuffer) |*b| {
         b.* = rng.boolean();
@@ -244,6 +268,7 @@ pub fn init_cave(self: *Self, layer: i32, rng: std.rand.Random) void {
             tile.* = .gems;
         }
     }
+    self.set_dirty_all();
 }
 
 // INDEXING //
@@ -267,7 +292,7 @@ const Point = struct {
     y: i32,
 };
 
-fn random_in_tile(index: usize, rng: std.rand.Random) Point {
+fn random_in_tile(index: usize, rng: std.Random) Point {
     const x: i32 = @intCast(index % 20);
     const y: i32 = @intCast(index / 20);
 
@@ -277,13 +302,13 @@ fn random_in_tile(index: usize, rng: std.rand.Random) Point {
     };
 }
 
-fn random_adjacent_tile(index: usize, rng: std.rand.Random) usize {
+fn random_adjacent_tile(index: usize, rng: std.Random) usize {
     const sindex: i32 = @intCast(index);
     const surrounding = [_]i8{ -20, -1, 1, 20 };
     const diff = surrounding[rng.uintLessThanBiased(u8, 4)];
-    if (sindex + diff < 0 or sindex + diff > 380) {
+    if (sindex + diff < 0 or sindex + diff > TILE_MAX) {
         for (surrounding) |ndiff| {
-            if (sindex + ndiff > 0 and sindex + ndiff < 380) {
+            if (sindex + ndiff > 0 and sindex + ndiff < TILE_MAX) {
                 return @intCast(sindex + ndiff);
             }
         }
@@ -332,6 +357,11 @@ pub fn update(self: *Self) void {
             },
             else => {},
         }
+    }
+
+    // re-draw everything periodically
+    if ((self.frameCount & 0xFF) == 0) {
+        self.set_dirty_all();
     }
 }
 

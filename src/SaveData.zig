@@ -46,7 +46,7 @@ pub fn read_save() bool {
     bank.stockpile.worker = savebuffer[2];
     bank.stockpile.drill = savebuffer[3];
     bank.drillgen = savebuffer[4];
-    var rng = std.rand.DefaultPrng.init(savebuffer[0] + savebuffer[1] + savebuffer[2] + savebuffer[4]);
+    var rng = std.Random.DefaultPrng.init(savebuffer[0] + savebuffer[1] + savebuffer[2] + savebuffer[4]);
 
     LayerProgress.set_layer(@truncate(savebuffer[5]), rng.random());
 

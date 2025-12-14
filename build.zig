@@ -1,19 +1,26 @@
 const std = @import("std");
 
 pub fn build(b: *std.Build) !void {
-    const exe = b.addExecutable(.{
-        .name = "cart",
+    const optimize = b.standardOptimizeOption(.{});
+
+    const module = b.createModule(.{
         .root_source_file = b.path("src/main.zig"),
-        .version = try std.SemanticVersion.parse("3.0.1"),
+        .optimize = optimize,
         .target = b.resolveTargetQuery(.{
             .cpu_arch = .wasm32,
             .os_tag = .freestanding,
         }),
-        .optimize = b.standardOptimizeOption(.{}),
+    });
+
+    module.export_symbol_names = &[_][]const u8{ "start", "update" };
+
+    const exe = b.addExecutable(.{
+        .name = "cart",
+        .root_module = module,
+        .version = try std.SemanticVersion.parse("4.0.0"),
     });
 
     exe.entry = .disabled;
-    exe.root_module.export_symbol_names = &[_][]const u8{ "start", "update" };
     exe.import_memory = true;
     exe.initial_memory = 65536;
     exe.max_memory = 65536;

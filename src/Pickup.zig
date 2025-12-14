@@ -2,6 +2,7 @@ const w4 = @import("wasm4.zig");
 
 const math = @import("std").math;
 const Bank = @import("Bank.zig");
+const Layer = @import("Layer.zig");
 
 x: i32,
 y: i32,
@@ -35,7 +36,6 @@ fn jump_anim_offset(time: u16) i32 {
     }
 }
 
-const Size = 4;
 pub fn draw(self: Self, animationTime: u16) void {
     const x = self.x;
     const y = self.y;
@@ -47,6 +47,11 @@ pub fn draw(self: Self, animationTime: u16) void {
     };
     const jump = jump_anim_offset(animationTime -% self.spawnTime);
     w4.blit(sprite.array, x, y + jump, sprite.width, sprite.height, sprite.flags);
+
+    if (jump != 0) {
+        // shift 3 to tile coordinates
+        Layer.map.set_dirty(@intCast(x >> 3), @intCast(y >> 3));
+    }
 }
 
 pub fn contact(self: Self, x: i32, y: i32) bool {

@@ -1,6 +1,7 @@
 const w4 = @import("wasm4.zig");
 const find = @import("std").mem.indexOfScalarPos;
 const Controller = @import("Controller.zig");
+const Layer = @import("Layer.zig");
 
 pub const Progression = enum {
     welcome,
@@ -40,6 +41,7 @@ pub fn force_read(line: []const u8) void {
     lineAnimation = 0;
     mline = 0;
     mreadingLine = line;
+    Layer.map.set_dirty_all();
 }
 
 pub fn disable() void {
@@ -86,6 +88,13 @@ pub fn update_draw(controls: *Controller) bool {
         w4.text(string, 0, 120 - animJump);
     }
 
+    if (animJump != 0) {
+        Layer.map.dirty_flags[13] = 0xFFFFFFFF;
+        Layer.map.dirty_flags[14] = 0xFFFFFFFF;
+        Layer.map.dirty_flags[15] = 0xFFFFFFFF;
+        Layer.map.dirty_flags[16] = 0xFFFFFFFF;
+    }
+
     if (controls.released.x or controls.released.y) {
         lineAnimation = 0;
         if (mend) |end| {
@@ -94,6 +103,7 @@ pub fn update_draw(controls: *Controller) bool {
                 mreadingLine = null;
                 controls.released.y = false; // eat continue inputs
                 controls.released.x = false;
+                Layer.map.set_dirty_all();
                 return false;
             }
             mline = end + 1;
@@ -103,6 +113,7 @@ pub fn update_draw(controls: *Controller) bool {
             mreadingLine = null;
             controls.released.y = false;
             controls.released.x = false;
+            Layer.map.set_dirty_all();
             return false;
         }
     }

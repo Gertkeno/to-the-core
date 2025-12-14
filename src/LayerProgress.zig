@@ -27,7 +27,7 @@ const palette: []const [4]u32 = &.{
 };
 
 //const majorLayerSize = 2;
-fn set_layername(newlayer: u8, rng: std.rand.Random) void {
+fn set_layername(newlayer: u8, rng: std.Random) void {
     const nameindex = newlayer;
     @memset(w4.FRAMEBUFFER[0..320], 0);
     if (newlayer == 255) {
@@ -45,7 +45,7 @@ fn set_layername(newlayer: u8, rng: std.rand.Random) void {
         }
     } else {
         const layertype = names[nameindex];
-        @memcpy(&layernamebuffer, layertype);
+        @memcpy(layernamebuffer[0..layertype.len], layertype);
         // up to 9 extra layers between major layer & palette changes
         //layernamebuffer[layertype.len] = ' ';
         //layernamebuffer[layertype.len + 1] = '0' + (newlayer % majorLayerSize + 1);
@@ -59,7 +59,7 @@ fn set_layername(newlayer: u8, rng: std.rand.Random) void {
     }
 }
 
-pub fn increment(rng: std.rand.Random) void {
+pub fn increment(rng: std.Random) void {
     if (currentlayer < 255) {
         set_layer(currentlayer + 1, rng);
     } else {
@@ -67,7 +67,7 @@ pub fn increment(rng: std.rand.Random) void {
     }
 }
 
-pub fn set_layer(value: u8, rng: std.rand.Random) void {
+pub fn set_layer(value: u8, rng: std.Random) void {
     currentlayer = value;
     set_layername(currentlayer, rng);
 }
@@ -83,7 +83,7 @@ const ups_flags = 1; // BLIT_2BPP
 const ups = [16]u8{ 0xb3, 0xb3, 0xc4, 0xc4, 0x19, 0x19, 0x6e, 0x6e, 0xb3, 0xb3, 0xc4, 0xc4, 0x19, 0x19, 0x6e, 0x6e };
 
 var animation: u8 = 0;
-pub fn draw(progress: u32, rng: std.rand.Random) void {
+pub fn draw(progress: u32, rng: std.Random) void {
     if (progress >= 160) {
         w4.DRAW_COLORS.* = 0x1234;
         animation += 1;
@@ -97,7 +97,7 @@ pub fn draw(progress: u32, rng: std.rand.Random) void {
     } else if (progress > 0) {
         rng.bytes(w4.FRAMEBUFFER[0..320]);
 
-        const p2 = @divTrunc(progress, 4);
+        const p2 = progress >> @as(u3, 2);
         for (w4.FRAMEBUFFER[0..320], 0..) |*byte, n| {
             const x = n % 40;
             if (p2 >= x) {
@@ -114,7 +114,7 @@ pub fn draw(progress: u32, rng: std.rand.Random) void {
                     };
                 }
             } else {
-                byte.* = 0b00000000;
+                byte.* = 0;
             }
         }
     }

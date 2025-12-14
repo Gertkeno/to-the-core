@@ -34,8 +34,8 @@ var players = [4]Character{
 var active_players: usize = 1;
 
 // 82715
-var randombacker = std.rand.DefaultPrng.init(82724);
-var rng: std.rand.Random = undefined;
+var randombacker = std.Random.DefaultPrng.init(82724);
+var rng: std.Random = undefined;
 
 var mainMenu: ?MainMenu = MainMenu.init(82724);
 

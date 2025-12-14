@@ -20,14 +20,8 @@ pub fn init(seed: u64) Self {
 }
 
 pub fn update_seed_text(self: *Self) void {
-    const offset = 5;
-    self.seed_text_len = @intCast(std.fmt.formatIntBuf(
-        self.seed_text_buf[offset..],
-        self.seed,
-        16,
-        .upper,
-        .{},
-    ) + offset);
+    const newstr = std.fmt.bufPrint(&self.seed_text_buf, "Seed: {x}", .{self.seed}) catch unreachable;
+    self.seed_text_len = @intCast(newstr.len);
 }
 
 pub const Options = enum {

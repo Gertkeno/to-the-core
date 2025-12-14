@@ -115,6 +115,8 @@ fn draw_tool(self: Self) void {
     }
     w4.blit(&crosshair, tool.x * 8, (tool.y + 1) * 8, 8, 8, flags);
 
+    map.set_dirty(@intCast(tool.x), @intCast(tool.y));
+
     //draw_stockpile(self.tool.?, 0);
 }
 
@@ -185,6 +187,8 @@ pub fn update(self: *Self, controls: Controller) void {
         if (ts.selecting(self, controls)) {
             self.toolSelecting = null;
             self.toolerror = null;
+
+            map.set_dirty_all();
         }
         return;
     }
@@ -245,11 +249,14 @@ pub fn update(self: *Self, controls: Controller) void {
         }
     }
 
+    // progress walking animation
     if (@as(u8, @bitCast(controls.held)) & 0b11110000 != 0) {
         self.walkanimation += 1;
         if (self.walkanimation >= (frames.len * 4)) {
             self.walkanimation = 0;
         }
+
+        map.set_dirty(@intCast(self.x >> TileRatio), @intCast(self.y >> TileRatio));
     }
 
     if (controls.released.x and self.tool != null) {
@@ -261,6 +268,8 @@ pub fn update(self: *Self, controls: Controller) void {
                 self.toolerror = 0;
                 toolfail.play();
             }
+        } else {
+            map.set_dirty(5, 19); // redraw resources corner
         }
     } else if (controls.released.y) {
         self.toolSelecting = ToolSelector{};
