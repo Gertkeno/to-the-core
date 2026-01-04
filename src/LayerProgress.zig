@@ -86,13 +86,17 @@ var animation: u8 = 0;
 pub fn draw(progress: u32, rng: std.Random) void {
     if (progress >= 160) {
         w4.DRAW_COLORS.* = 0x1234;
-        animation += 1;
+        animation +%= 1;
 
         var posx: i32 = 0;
         const y: u8 = (animation / 16) % 8;
         while (posx < 160) : (posx += 8) {
-            w4.blitSub(&ups, posx, 0, 8, 8 - y, 0, y, 8, ups_flags);
-            w4.blitSub(&ups, posx, 8 - y, 8, y, 0, 0, 8, ups_flags);
+            const height = 8 - y;
+            // w4 run-native fails on 0-height blit subs
+            if (height != 0)
+                w4.blitSub(&ups, posx, 0, 8, height, 0, y, 8, ups_flags);
+            if (y != 0)
+                w4.blitSub(&ups, posx, height, 8, y, 0, 0, 8, ups_flags);
         }
     } else if (progress > 0) {
         rng.bytes(w4.FRAMEBUFFER[0..320]);
