@@ -17,7 +17,7 @@ pub fn build(b: *std.Build) !void {
     const exe = b.addExecutable(.{
         .name = "cart",
         .root_module = module,
-        .version = try std.SemanticVersion.parse("4.0.0"),
+        .version = try std.SemanticVersion.parse("4.1.0"),
     });
 
     exe.entry = .disabled;
